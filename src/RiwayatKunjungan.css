@@ -1,316 +1,525 @@
 
+/* ==========================================
+   BAGSPACE - RIWAYAT KUNJUNGAN
+   DARK MODE & LIGHT MODE
+========================================== */
+
+/* DEFAULT DARK MODE */
+
 .rk-container {
-  padding: 16px;
+  --rk-bg: #050817;
+  --rk-card: #0e1729;
+  --rk-card-soft: #1e2a3c;
+  --rk-input: #182438;
+  --rk-text: #e9eff9;
+  --rk-muted: #9aaac1;
+  --rk-border: #35445b;
+  --rk-table-head: #1e2a3c;
+  --rk-hover: #23334a;
+  --rk-blue: #3b82f6;
+
   width: 100%;
   min-width: 0;
-  color: #1e293b;
+  min-height: calc(100dvh - 48px);
+  padding: 14px;
+  background: var(--rk-bg);
+  color: var(--rk-text);
   font-family: inherit;
   font-size: 12px;
+  overflow-x: hidden;
 }
+
+/* ==========================================
+   LIGHT MODE
+   Mendukung class dan data-theme
+========================================== */
+
+body.light-mode .rk-container,
+body.light .rk-container,
+html.light .rk-container,
+html[data-theme="light"] .rk-container,
+[data-theme="light"] .rk-container,
+.dashboard-shell.light-mode .rk-container,
+.dashboard-shell.light .rk-container {
+  --rk-bg: #f1f5f9;
+  --rk-card: #ffffff;
+  --rk-card-soft: #f8fafc;
+  --rk-input: #ffffff;
+  --rk-text: #1e293b;
+  --rk-muted: #64748b;
+  --rk-border: #e2e8f0;
+  --rk-table-head: #f1f5f9;
+  --rk-hover: #f8fafc;
+  --rk-blue: #2563eb;
+}
+
+/* ==========================================
+   HEADER HALAMAN
+========================================== */
 
 .rk-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .rk-top h2 {
-  font-size: 19px;
-  font-weight: 700;
   margin: 0 0 4px;
+  color: var(--rk-text);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
 .rk-top p {
-  color: #64748b;
   margin: 0;
-  font-size: 12px;
+  color: var(--rk-muted);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
+/* ==========================================
+   EXPORT BUTTON
+========================================== */
+
 .rk-btn-export {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
-  padding: 9px 13px;
+  min-height: 34px;
+  padding: 8px 12px;
   border: none;
   border-radius: 7px;
   background: #2563eb;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
 
 .rk-btn-export:hover {
   background: #1d4ed8;
 }
 
-/* STATISTIK */
+.rk-btn-export svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ==========================================
+   STATISTIK
+========================================== */
 
 .rk-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .rk-stat-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 13px 15px;
-  min-height: 88px;
+  gap: 10px;
+  min-width: 0;
+  min-height: 78px;
+  padding: 12px 14px;
+  border: 1px solid var(--rk-border);
+  border-radius: 9px;
+  background: var(--rk-card);
+  transition: border-color 0.2s ease;
+}
+
+.rk-stat-card:hover {
+  border-color: var(--rk-blue);
 }
 
 .rk-stat-info {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+  min-width: 0;
 }
 
 .rk-stat-info span {
-  color: #64748b;
+  color: var(--rk-muted);
   font-size: 11px;
+  font-weight: 600;
 }
 
 .rk-stat-info strong {
-  font-size: 24px;
-  font-weight: 700;
+  color: var(--rk-text);
+  font-size: 22px;
+  font-weight: 800;
   line-height: 1.1;
 }
 
 .rk-stat-info small {
-  color: #94a3b8;
+  color: var(--rk-muted);
   font-size: 10px;
 }
 
 .rk-stat-icon {
   display: flex;
+  flex: 0 0 36px;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 9px;
 }
 
+.rk-stat-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 .rk-stat-icon.blue {
-  color: #2563eb;
-  background: #eff6ff;
+  color: #60a5fa;
+  background: rgb(37 99 235 / 15%);
 }
 
 .rk-stat-icon.green {
-  color: #16a34a;
-  background: #f0fdf4;
+  color: #4ade80;
+  background: rgb(22 163 74 / 15%);
 }
 
 .rk-stat-icon.orange {
-  color: #ea580c;
-  background: #fff7ed;
+  color: #fb923c;
+  background: rgb(234 88 12 / 15%);
 }
 
-/* TABEL */
+/* ==========================================
+   MAIN CARD
+========================================== */
 
 .rk-main-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 11px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
+  border: 1px solid var(--rk-border);
+  border-radius: 10px;
+  background: var(--rk-card);
 }
 
+/* ==========================================
+   CARD HEADER
+========================================== */
+
 .rk-card-header {
-  padding: 14px 16px;
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e2e8f0;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rk-border);
 }
 
 .rk-card-header h3 {
-  font-size: 14px;
-  font-weight: 700;
   margin: 0 0 4px;
+  color: var(--rk-text);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .rk-card-header p {
-  font-size: 11px;
-  color: #64748b;
   margin: 0;
+  color: var(--rk-muted);
+  font-size: 11px;
 }
 
 .rk-count {
-  background: #eff6ff;
-  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 5px 10px;
   border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
+  background: rgb(37 99 235 / 15%);
+  color: #60a5fa;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-/* FILTER */
+/* ==========================================
+   FILTER SECTION
+========================================== */
 
 .rk-filter-section {
   display: grid;
   grid-template-columns:
     minmax(160px, 2fr)
-    minmax(120px, 1.2fr)
-    minmax(120px, 1.2fr)
+    minmax(110px, 1.2fr)
+    minmax(110px, 1.2fr)
     minmax(110px, 1fr)
     minmax(110px, 1fr)
     auto;
-  gap: 8px;
-  padding: 13px 15px;
+  flex: 0 0 auto;
   align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rk-border);
 }
+
+/* SEARCH DAN TANGGAL */
 
 .rk-search-box,
 .rk-date-box {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 0 9px;
-  height: 35px;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  color: #64748b;
   min-width: 0;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--rk-border);
+  border-radius: 7px;
+  background: var(--rk-input);
+  color: var(--rk-muted);
+}
+
+.rk-search-box:focus-within,
+.rk-date-box:focus-within {
+  border-color: var(--rk-blue);
+}
+
+.rk-search-box svg,
+.rk-date-box svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
 }
 
 .rk-search-box input,
 .rk-date-box input {
-  border: none;
-  outline: none;
   width: 100%;
   min-width: 0;
-  font-size: 11px;
+  border: none;
+  outline: none;
   background: transparent;
-  color: #334155;
+  color: var(--rk-text);
+  font-size: 11px;
 }
+
+.rk-search-box input::placeholder,
+.rk-date-box input::placeholder {
+  color: var(--rk-muted);
+}
+
+.rk-date-box input {
+  color-scheme: dark;
+}
+
+/* SELECT */
 
 .rk-filter-section select {
   width: 100%;
   min-width: 0;
-  height: 35px;
+  height: 34px;
   padding: 0 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--rk-border);
   border-radius: 7px;
-  background: white;
-  color: #334155;
-  font-size: 11px;
   outline: none;
+  background: var(--rk-input);
+  color: var(--rk-text);
+  font-size: 11px;
 }
 
+.rk-filter-section select:focus {
+  border-color: var(--rk-blue);
+}
+
+/* RESET */
+
 .rk-reset {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  height: 35px;
+  min-height: 34px;
   padding: 0 11px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--rk-border);
   border-radius: 7px;
-  background: #f8fafc;
-  color: #475569;
+  background: var(--rk-card-soft);
+  color: var(--rk-text);
   font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-/* TABLE */
+.rk-reset:hover {
+  border-color: var(--rk-blue);
+}
+
+/* ==========================================
+   TABLE SCROLL
+========================================== */
 
 .rk-table-wrapper {
-  overflow-x: auto;
+  position: relative;
   width: 100%;
+  min-width: 0;
+  max-height: 430px;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #526681 transparent;
 }
+
+.rk-table-wrapper::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.rk-table-wrapper::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #526681;
+}
+
+.rk-table-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ==========================================
+   TABLE
+========================================== */
 
 .rk-table {
   width: 100%;
-  border-collapse: collapse;
+  min-width: 780px;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
   white-space: nowrap;
 }
 
 .rk-table thead {
-  background: #f1f5f9;
+  background: var(--rk-table-head);
 }
 
 .rk-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   padding: 11px 13px;
+  border-bottom: 1px solid var(--rk-border);
+  background: var(--rk-table-head);
+  color: var(--rk-text);
   font-size: 11px;
-  color: #475569;
-  font-weight: 700;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .rk-table td {
   padding: 11px 13px;
+  border-bottom: 1px solid var(--rk-border);
+  color: var(--rk-muted);
   font-size: 11px;
-  color: #475569;
-  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.rk-table tbody tr {
+  background: var(--rk-card);
+  transition: background 0.15s ease;
 }
 
 .rk-table tbody tr:hover {
-  background: #f8fafc;
+  background: var(--rk-hover);
 }
+
+.rk-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* NAMA */
 
 .rk-name {
-  font-weight: 600;
-  color: #1e293b !important;
+  color: var(--rk-text) !important;
+  font-weight: 700;
 }
 
+/* ROLE */
+
 .rk-role {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 5px 9px;
   border-radius: 20px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .rk-role.mahasiswa {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: rgb(37 99 235 / 16%);
+  color: #60a5fa;
 }
 
 .rk-role.dosen {
-  background: #f3e8ff;
-  color: #7e22ce;
+  background: rgb(147 51 234 / 16%);
+  color: #c084fc;
 }
 
+/* ==========================================
+   EMPTY STATE
+========================================== */
+
 .rk-empty {
+  padding: 35px 15px !important;
+  color: var(--rk-muted) !important;
   text-align: center;
-  padding: 35px !important;
-  color: #94a3b8;
+  white-space: normal;
 }
 
 .rk-empty svg {
-  margin: 0 auto 8px;
+  display: block;
+  margin: 0 auto 10px;
 }
 
 .rk-empty p {
-  margin: 0 0 4px;
-  font-weight: 600;
+  margin: 0 0 5px;
+  color: var(--rk-text);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .rk-empty small {
+  color: var(--rk-muted);
   font-size: 11px;
 }
 
-/* PAGINATION */
+/* ==========================================
+   PAGINATION
+========================================== */
 
 .rk-footer {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 15px;
-  color: #64748b;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--rk-border);
+  color: var(--rk-muted);
   font-size: 11px;
 }
 
 .rk-pagination {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .rk-pagination button {
@@ -319,10 +528,16 @@
   justify-content: center;
   width: 29px;
   height: 29px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--rk-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--rk-card-soft);
+  color: var(--rk-text);
   cursor: pointer;
+}
+
+.rk-pagination button:hover:not(:disabled) {
+  border-color: var(--rk-blue);
+  color: var(--rk-blue);
 }
 
 .rk-pagination button:disabled {
@@ -330,26 +545,215 @@
   cursor: not-allowed;
 }
 
+/* ==========================================
+   LIGHT MODE DETAILS
+========================================== */
+
+body.light-mode .rk-date-box input,
+body.light .rk-date-box input,
+html.light .rk-date-box input,
+html[data-theme="light"] .rk-date-box input,
+[data-theme="light"] .rk-date-box input,
+.dashboard-shell.light-mode .rk-date-box input,
+.dashboard-shell.light .rk-date-box input {
+  color-scheme: light;
+}
+
+body.light-mode .rk-stat-icon.blue,
+body.light .rk-stat-icon.blue,
+html.light .rk-stat-icon.blue,
+html[data-theme="light"] .rk-stat-icon.blue,
+[data-theme="light"] .rk-stat-icon.blue,
+.dashboard-shell.light-mode .rk-stat-icon.blue,
+.dashboard-shell.light .rk-stat-icon.blue {
+  color: #2563eb;
+}
+
+body.light-mode .rk-stat-icon.green,
+body.light .rk-stat-icon.green,
+html.light .rk-stat-icon.green,
+html[data-theme="light"] .rk-stat-icon.green,
+[data-theme="light"] .rk-stat-icon.green,
+.dashboard-shell.light-mode .rk-stat-icon.green,
+.dashboard-shell.light .rk-stat-icon.green {
+  color: #16a34a;
+}
+
+body.light-mode .rk-stat-icon.orange,
+body.light .rk-stat-icon.orange,
+html.light .rk-stat-icon.orange,
+html[data-theme="light"] .rk-stat-icon.orange,
+[data-theme="light"] .rk-stat-icon.orange,
+.dashboard-shell.light-mode .rk-stat-icon.orange,
+.dashboard-shell.light .rk-stat-icon.orange {
+  color: #ea580c;
+}
+
+body.light-mode .rk-count,
+body.light .rk-count,
+html.light .rk-count,
+html[data-theme="light"] .rk-count,
+[data-theme="light"] .rk-count,
+.dashboard-shell.light-mode .rk-count,
+.dashboard-shell.light .rk-count {
+  color: #2563eb;
+}
+
+body.light-mode .rk-role.mahasiswa,
+body.light .rk-role.mahasiswa,
+html.light .rk-role.mahasiswa,
+html[data-theme="light"] .rk-role.mahasiswa,
+[data-theme="light"] .rk-role.mahasiswa,
+.dashboard-shell.light-mode .rk-role.mahasiswa,
+.dashboard-shell.light .rk-role.mahasiswa {
+  color: #1d4ed8;
+}
+
+body.light-mode .rk-role.dosen,
+body.light .rk-role.dosen,
+html.light .rk-role.dosen,
+html[data-theme="light"] .rk-role.dosen,
+[data-theme="light"] .rk-role.dosen,
+.dashboard-shell.light-mode .rk-role.dosen,
+.dashboard-shell.light .rk-role.dosen {
+  color: #7e22ce;
+}
+
+/* ==========================================
+   DESKTOP - SATU LAYAR
+========================================== */
+
+@media (min-width: 1051px) {
+
+  .rk-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 48px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .rk-top,
+  .rk-stats {
+    flex-shrink: 0;
+  }
+
+  .rk-main-card {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .rk-table-wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
+}
+
+/* ==========================================
+   TABLET
+========================================== */
+
 @media (max-width: 1100px) {
+
   .rk-filter-section {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 650px) {
-  .rk-stats {
-    grid-template-columns: 1fr;
-  }
+/* ==========================================
+   MOBILE
+========================================== */
 
-  .rk-filter-section {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 650px) {
+
+  .rk-container {
+    height: auto;
+    min-height: calc(100dvh - 48px);
+    padding: 10px;
+    overflow: visible;
   }
 
   .rk-top {
     align-items: flex-start;
+    gap: 10px;
   }
 
-  .rk-container {
+  .rk-top h2 {
+    font-size: 16px;
+  }
+
+  .rk-top p {
+    font-size: 11px;
+  }
+
+  .rk-btn-export {
+    min-height: 32px;
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  .rk-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .rk-stat-card {
+    min-height: 70px;
+    padding: 10px 12px;
+  }
+
+  .rk-stat-info strong {
+    font-size: 20px;
+  }
+
+  .rk-filter-section {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
     padding: 10px;
+  }
+
+  .rk-search-box {
+    grid-column: 1 / -1;
+  }
+
+  .rk-card-header {
+    padding: 11px;
+  }
+
+  .rk-table-wrapper {
+    max-height: 400px;
+  }
+
+  .rk-table {
+    min-width: 750px;
+  }
+
+  .rk-footer {
+    gap: 10px;
+    padding: 10px;
+  }
+}
+
+/* ==========================================
+   HP KECIL
+========================================== */
+
+@media (max-width: 380px) {
+
+  .rk-top h2 {
+    font-size: 15px;
+  }
+
+  .rk-filter-section {
+    grid-template-columns: 1fr;
+  }
+
+  .rk-search-box {
+    grid-column: auto;
+  }
+
+  .rk-table-wrapper {
+    max-height: 350px;
   }
 }
