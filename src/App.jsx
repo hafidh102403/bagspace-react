@@ -3,7 +3,7 @@ import MonitoringLoker from "./MonitoringLoker";
 import RiwayatLoker from "./RiwayatLoker";
 import SetupUser from "./SetupUser";
 import SetupLoker from "./SetupLoker";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BookOpen,
   LayoutDashboard,
@@ -19,6 +19,7 @@ import {
   Eye,
   EyeOff,
   Sun,
+  Moon,
   ChartNoAxesCombined,
   Clock3,
   ArrowLeftRight,
@@ -46,14 +47,14 @@ function LoginPage({ onLogin }) {
     e.preventDefault();
 
     if (!userId.trim() || !password.trim()) {
-      setError("Masukkan User ID dan password terlebih dahulu.");
+      setError("Masukkan NIM / ID Admin dan password terlebih dahulu.");
       return;
     }
 
     const success = onLogin(userId.trim(), password, remember);
 
     if (!success) {
-      setError("User ID atau password salah. Silakan coba lagi.");
+      setError("NIM / ID Admin atau password salah. Silakan coba lagi.");
       return;
     }
 
@@ -75,14 +76,14 @@ function LoginPage({ onLogin }) {
         </div>
 
         <form onSubmit={submit}>
-          <label htmlFor="userId">User ID</label>
+          <label htmlFor="userId">NIM / ID Admin</label>
           <div className="login-input">
             <UserRound size={17} />
             <input
               id="userId"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="Masukkan User ID"
+              placeholder="Masukkan NIM atau ID Admin"
               autoComplete="username"
             />
           </div>
@@ -126,7 +127,7 @@ function LoginPage({ onLogin }) {
 
         <p className="login-security">
           <LockKeyhole size={12} />
-          Akses khusus petugas perpustakaan
+          Akses Admin dan Mahasiswa Perpustakaan
         </p>
       </section>
 
@@ -137,7 +138,7 @@ function LoginPage({ onLogin }) {
   );
 }
 
-function Sidebar({ activeMenu, setActiveMenu, onLogout, open, close }) {
+function Sidebar({ activeMenu, setActiveMenu, onLogout, open, close, isAdmin }) {
   const [lokerOpen, setLokerOpen] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
 
@@ -162,7 +163,7 @@ function Sidebar({ activeMenu, setActiveMenu, onLogout, open, close }) {
           <strong>BAGSPACE</strong>
         </div>
         <nav className="sidebar-menu">
-          {menus.slice(0, 2).map((item) => {
+          {(isAdmin ? menus.slice(0, 2) : menus.slice(0, 1)).map((item) => {
             const Icon = item.icon;
             return (
               <button key={item.label}
@@ -188,11 +189,11 @@ function Sidebar({ activeMenu, setActiveMenu, onLogout, open, close }) {
                   onClick={() => navigate("Pilih Loker")}>
                   <Grid2X2 size={15} /><span>Pilih Loker</span>
                 </button>
-                <button type="button"
+                {isAdmin && <button type="button"
                   className={`sidebar-submenu-link ${activeMenu === "Monitoring Loker" ? "active" : ""}`}
                   onClick={() => navigate("Monitoring Loker")}>
                   <ChartNoAxesCombined size={15} /><span>Monitoring Loker</span>
-                </button>
+                </button>}
               </div>
             )}
           </div>
@@ -209,7 +210,7 @@ function Sidebar({ activeMenu, setActiveMenu, onLogout, open, close }) {
             );
           })}
 
-          <div className="sidebar-dropdown">
+          {isAdmin && <div className="sidebar-dropdown">
             <button
               type="button"
               aria-expanded={setupOpen}
@@ -238,7 +239,7 @@ function Sidebar({ activeMenu, setActiveMenu, onLogout, open, close }) {
                 </button>
               </div>
             )}
-          </div>
+          </div>}
         </nav>
         <div className="sidebar-bottom">
           <span>By.Hafid24</span>
@@ -491,16 +492,49 @@ function OtherPage({ title, setActiveMenu }) {
   );
 }
 
-function Dashboard({ userId, onLogout }) {
+// DEMO LOKAL: data akun disimpan di browser, bukan sistem autentikasi produksi.
+const ACCOUNTS_KEY = "bagspace_demo_accounts_v1";
+const SESSION_KEY = "bagspace_demo_session_v1";
+const ADMIN_ACCOUNT = { id: "admin", name: "Admin Perpus", role: "admin", prodi: "-", password: "123456" };
+const ADMIN_MENUS = ["Dashboard", "Pilih Loker", "Monitoring Loker", "Riwayat Loker", "Riwayat Kunjungan", "Setup User", "Setup Loker"];
+const USER_MENUS = ["Dashboard", "Pilih Loker", "Riwayat Loker"];
+
+function loadAccounts() {
+  try {
+    const data = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "[]");
+    return Array.isArray(data) ? data.filter((a) => a && a.id && a.role === "user") : [];
+  } catch { return []; }
+}
+
+function Dashboard({ account, onLogout }) {
   const [activeMenu, setActiveMenu] = useState("Dashboard");
+  const userId = account.id;
+  const isAdmin = account.role === "admin";
+  const allowedMenus = isAdmin ? ADMIN_MENUS : USER_MENUS;
+  const currentMenu = allowedMenus.includes(activeMenu) ? activeMenu : "Dashboard";
+  const navigate = (menu) => { if (allowedMenus.includes(menu)) setActiveMenu(menu); };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("bagspace_theme") === "light" ? "light" : "dark"; }
+    catch { return "dark"; }
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    document.body.classList.toggle("light-mode", theme === "light");
+    try { localStorage.setItem("bagspace_theme", theme); } catch { /* Storage disabled */ }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((previous) => previous === "dark" ? "light" : "dark");
+
 
   return (
     <div className="dashboard-shell">
       <Sidebar
-        activeMenu={activeMenu}
-        setActiveMenu={setActiveMenu}
+        activeMenu={currentMenu}
+        setActiveMenu={navigate}
+        isAdmin={isAdmin}
         onLogout={onLogout}
         open={sidebarOpen}
         close={() => setSidebarOpen(false)}
@@ -522,8 +556,15 @@ function Dashboard({ userId, onLogout }) {
 
           <div className="header-spacer" />
 
-          <button className="theme-button" aria-label="Tema">
-            <Sun size={17} />
+          <button
+            type="button"
+            className="theme-button"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Aktifkan Light Mode" : "Aktifkan Dark Mode"}
+            title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+            aria-pressed={theme === "light"}
+          >
+            {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
           </button>
 
           <button
@@ -531,18 +572,18 @@ function Dashboard({ userId, onLogout }) {
             onClick={() => setProfileOpen(!profileOpen)}
           >
             <span className="profile-copy">
-              <strong>{userId || "Admin Perpus"}</strong>
-              <small>PERPUS@GMAIL.COM</small>
+              <strong>{account.name}</strong>
+              <small>{isAdmin ? "ADMIN" : `${account.id} · ${account.prodi || "Mahasiswa"}`}</small>
             </span>
-            <span className="profile-avatar">A</span>
+            <span className="profile-avatar">{account.name.charAt(0).toUpperCase()}</span>
             <ChevronDown size={13} />
           </button>
 
           {profileOpen && (
             <div className="profile-dropdown">
-              <button onClick={() => { setActiveMenu("Setup User"); setProfileOpen(false); }}>
-                <UserRound size={14} /> Profil & Password
-              </button>
+              {isAdmin && <button onClick={() => { navigate("Setup User"); setProfileOpen(false); }}>
+                <UserRound size={14} /> Setup User
+              </button>}
               <button className="dropdown-logout" onClick={onLogout}>
                 <LogOut size={14} /> Log Out
               </button>
@@ -550,22 +591,22 @@ function Dashboard({ userId, onLogout }) {
           )}
         </header>
 
-        {activeMenu === "Dashboard" ? (
+        {currentMenu === "Dashboard" ? (
           <DashboardHome />
-        ) : activeMenu === "Riwayat Kunjungan" ? (
-          <RiwayatKunjungan userId={userId} isAdmin={userId === "admin"} />
-        ) : activeMenu === "Pilih Loker" ? (
-          <PilihLoker userId={userId} />
-        ) : activeMenu === "Monitoring Loker" ? (
+        ) : currentMenu === "Riwayat Kunjungan" ? (
+          <RiwayatKunjungan userId={userId} isAdmin={isAdmin} />
+        ) : currentMenu === "Pilih Loker" ? (
+          <PilihLoker userId={userId} currentUser={account} isAdmin={isAdmin} />
+        ) : currentMenu === "Monitoring Loker" ? (
           <MonitoringLoker />
-        ) : activeMenu === "Riwayat Loker" ? (
-          <RiwayatLoker userId={userId} isAdmin={userId === "admin"} />
-        ) : activeMenu === "Setup User" ? (
+        ) : currentMenu === "Riwayat Loker" ? (
+          <RiwayatLoker userId={userId} isAdmin={isAdmin} currentUser={account} />
+        ) : currentMenu === "Setup User" ? (
           <SetupUser />
-        ) : activeMenu === "Setup Loker" ? (
+        ) : currentMenu === "Setup Loker" ? (
           <SetupLoker />
         ) : (
-          <OtherPage title={activeMenu} setActiveMenu={setActiveMenu} />
+          <OtherPage title={currentMenu} setActiveMenu={navigate} />
         )}
       </main>
     </div>
@@ -573,42 +614,61 @@ function Dashboard({ userId, onLogout }) {
 }
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [userId, setUserId] = useState(
-    () => localStorage.getItem("bagspace_user") || ""
-  );
+  const [accounts, setAccounts] = useState(loadAccounts);
+  const [account, setAccount] = useState(() => {
+    try {
+      const id = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
+      if (!id) return null;
+      if (id === "admin") return { ...ADMIN_ACCOUNT, password: undefined };
+      const found = loadAccounts().find((a) => a.id === id);
+      return found ? { ...found, password: undefined } : null;
+    } catch { return null; }
+  });
 
   function handleLogin(id, password, remember) {
-    const validUserId = "admin";
-    const validPassword = "BagSpace@2026";
-
-    if (
-      id.trim().toLowerCase() !== validUserId ||
-      password !== validPassword
-    ) {
-      return false;
-    }
-
-    setUserId(validUserId);
-    setLoggedIn(true);
-
-    if (remember) {
-      localStorage.setItem("bagspace_user", validUserId);
-    } else {
-      localStorage.removeItem("bagspace_user");
-    }
-
+    const key = id.trim();
+    const found = key.toLowerCase() === "admin"
+      ? ADMIN_ACCOUNT
+      : accounts.find((a) => a.id === key);
+    if (!found || found.password !== password) return false;
+    const { password: _hidden, ...safeAccount } = found;
+    setAccount(safeAccount);
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    (remember ? localStorage : sessionStorage).setItem(SESSION_KEY, found.id);
     return true;
   }
 
   function handleLogout() {
-    setLoggedIn(false);
-    setUserId("");
+    setAccount(null);
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
     localStorage.removeItem("bagspace_user");
   }
 
-  return loggedIn ? (
-    <Dashboard userId={userId} onLogout={handleLogout} />
+  function createAccount(data) {
+    if (!data.name || !data.id || !data.password) return { ok: false, message: "Lengkapi semua kolom." };
+    if (data.id.toLowerCase() === "admin" || accounts.some((a) => a.id === data.id)) {
+      return { ok: false, message: "NIM sudah digunakan." };
+    }
+    if (data.password.length < 8) return { ok: false, message: "Password minimal 8 karakter." };
+    const next = [...accounts, { ...data, role: "user" }];
+    setAccounts(next);
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
+    return { ok: true, message: "Akun mahasiswa berhasil dibuat (demo lokal)." };
+  }
+
+  function deleteAccount(id) {
+    const next = accounts.filter((a) => a.id !== id);
+    setAccounts(next);
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
+  }
+
+  return account ? (
+    <Dashboard
+      account={account}
+      onLogout={handleLogout}
+    />
   ) : (
     <LoginPage onLogin={handleLogin} />
   );

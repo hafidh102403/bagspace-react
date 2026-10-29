@@ -1,346 +1,448 @@
+
+/* =========================================
+   BAGSPACE - PILIH LOKER
+========================================= */
+
 .pl-page {
-    padding: 16px;
-    min-width: 0;
-    color: #e2e8f0;
-    font-family: inherit;
-    font-size: 12px
+  padding: 16px;
+  min-width: 0;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 12px;
 }
 
 .pl-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .pl-header h2 {
-    font-size: 20px;
-    margin: 0 0 4px;
-    font-weight: 700
+  font-size: 20px;
+  margin: 0 0 4px;
+  font-weight: 700;
 }
 
 .pl-header p {
-    margin: 0;
-    color: #94a3b8
+  margin: 0;
+  color: #94a3b8;
 }
 
 .pl-total {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 9px 12px;
-    white-space: nowrap
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 9px 12px;
+  white-space: nowrap;
 }
+
+/* =========================================
+   STATISTIK
+========================================= */
 
 .pl-stats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 14px
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
-.pl-stats>div {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px
+.pl-stats > div {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .pl-stats span {
-    color: #94a3b8
+  color: #94a3b8;
 }
 
 .pl-stats strong {
-    font-size: 23px;
-    line-height: 1.1
+  font-size: 23px;
+  line-height: 1.1;
 }
 
+/* =========================================
+   PANEL
+========================================= */
+
 .pl-panel {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 11px;
-    padding: 14px;
-    min-width: 0
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 11px;
+  padding: 14px;
+  min-width: 0;
 }
 
 .pl-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .pl-tabs {
-    display: flex;
-    gap: 7px;
-    flex-wrap: wrap
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
 }
 
 .pl-tabs button,
 .pl-toolbar select {
-    border: 1px solid #475569;
-    border-radius: 7px;
-    padding: 8px 11px;
-    background: #0f172a;
-    color: #cbd5e1;
-    font: inherit;
-    cursor: pointer
+  border: 1px solid #475569;
+  border-radius: 7px;
+  padding: 8px 11px;
+  background: #0f172a;
+  color: #cbd5e1;
+  font: inherit;
+  cursor: pointer;
 }
 
 .pl-tabs button.selected {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: white
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
 }
 
+/* =========================================
+   LEGENDA
+========================================= */
+
 .pl-legend {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin: 14px 0 12px;
-    color: #cbd5e1
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 14px 0 12px;
+  color: #cbd5e1;
 }
 
 .pl-legend span {
-    display: flex;
-    align-items: center;
-    gap: 6px
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .pl-dot {
-    display: inline-block;
-    width: 11px;
-    height: 11px;
-    border-radius: 3px;
-    border: 1px solid #64748b
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1px solid #64748b;
 }
 
 .pl-dot.available {
-    background: white
+  background: white;
 }
 
 .pl-dot.occupied {
-    background: #020617
+  background: #020617;
 }
 
 .pl-dot.broken {
-    background: #64748b
+  background: #64748b;
 }
 
+/* =========================================
+   SCROLL GRID
+========================================= */
+
 .pl-grid-scroll {
-    max-height: calc(100vh - 340px);
-    min-height: 160px;
-    overflow-y: auto;
-    padding: 3px
+  max-height: calc(100vh - 340px);
+  min-height: 160px;
+  overflow-y: auto;
+  padding: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: #64748b transparent;
 }
 
 .pl-grid {
-    display: grid;
-    grid-template-columns: repeat(10, minmax(0, 1fr));
-    gap: 9px
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 9px;
 }
 
+/* =========================================
+   KOTAK LOKER FULL WARNA
+========================================= */
+
 .pl-locker {
-    min-width: 0;
-    min-height: 65px;
-    border: 2px solid #64748b;
-    border-radius: 8px;
-    background: #f8fafc;
-    color: #0f172a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 3px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+
+  min-width: 0;
+  min-height: 65px;
+
+  border: 2px solid transparent;
+  border-radius: 8px;
+
+  /* Seluruh kotak mengikuti warna zona */
+  background: var(--zone-color, #f8fafc);
+  color: #0f172a;
+
+  cursor: pointer;
+  overflow: hidden;
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .pl-locker:hover {
-    outline: 2px solid #60a5fa;
-    outline-offset: 1px
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
 }
+
+.pl-locker:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+/* Hilangkan garis warna di atas */
 
 .pl-locker-zone {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 5px;
-    background: var(--zone-color)
+  display: none;
 }
+
+/* Ikon gembok */
+
+.pl-locker svg {
+  width: 22px;
+  height: 22px;
+  color: inherit;
+}
+
+/* Nomor loker */
 
 .pl-locker strong {
-    font-size: 12px
+  font-size: 13px;
+  font-weight: 800;
+  color: inherit;
 }
+
+/* =========================================
+   STATUS DIPINJAM
+========================================= */
 
 .pl-locker.dipinjam {
-    background: #020617;
-    color: #fff;
-    border-color: #475569
+  background: #020617;
+  color: #ffffff;
+  border-color: #475569;
 }
+
+.pl-locker.dipinjam svg,
+.pl-locker.dipinjam strong {
+  color: #ffffff;
+}
+
+/* =========================================
+   STATUS RUSAK
+========================================= */
 
 .pl-locker.rusak {
-    background: #64748b;
-    color: #fff;
-    border-color: #94a3b8
+  background: #64748b;
+  color: #ffffff;
+  border-color: #94a3b8;
 }
+
+.pl-locker.rusak svg,
+.pl-locker.rusak strong {
+  color: #ffffff;
+}
+
+/* =========================================
+   EMPTY STATE
+========================================= */
 
 .pl-empty {
-    padding: 35px;
-    text-align: center;
-    color: #94a3b8
+  padding: 35px;
+  text-align: center;
+  color: #94a3b8;
 }
+
+/* =========================================
+   FOOTNOTE
+========================================= */
 
 .pl-footnote {
-    margin-top: 12px;
-    color: #94a3b8;
-    font-size: 11px
+  margin-top: 12px;
+  color: #94a3b8;
+  font-size: 11px;
 }
 
+/* =========================================
+   NOTICE
+========================================= */
+
 .pl-notice {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #164e63;
-    color: #cffafe;
-    padding: 9px 12px;
-    border-radius: 7px;
-    margin-bottom: 12px
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #164e63;
+  color: #cffafe;
+  padding: 9px 12px;
+  border-radius: 7px;
+  margin-bottom: 12px;
 }
 
 .pl-notice button,
 .pl-modal-heading button {
-    border: 0;
-    background: transparent;
-    color: inherit;
-    cursor: pointer
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }
 
+/* =========================================
+   MODAL
+========================================= */
+
 .pl-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    background: #020617b8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #020617b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
 }
 
 .pl-modal {
-    width: min(100%, 400px);
-    background: #1e293b;
-    color: #f8fafc;
-    border: 1px solid #475569;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 18px 45px #0007
+  width: min(100%, 400px);
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1px solid #475569;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 18px 45px #0007;
 }
 
 .pl-modal-heading {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 18px
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
 }
 
 .pl-modal-heading h3 {
-    font-size: 18px;
-    margin: 0 0 5px
+  font-size: 18px;
+  margin: 0 0 5px;
 }
 
 .pl-modal-heading p {
-    margin: 0;
-    color: #94a3b8
+  margin: 0;
+  color: #94a3b8;
 }
 
 .pl-field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    color: #cbd5e1;
-    margin-bottom: 15px
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #cbd5e1;
+  margin-bottom: 15px;
 }
 
 .pl-field input {
-    border: 1px solid #64748b;
-    background: #0f172a;
-    color: #fff;
-    padding: 11px;
-    border-radius: 7px;
-    font: inherit
+  border: 1px solid #64748b;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 11px;
+  border-radius: 7px;
+  font: inherit;
 }
 
 .pl-primary,
 .pl-cancel {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 7px;
-    border: 0;
-    border-radius: 7px;
-    padding: 11px;
-    cursor: pointer;
-    font: inherit
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 7px;
+  padding: 11px;
+  cursor: pointer;
+  font: inherit;
 }
 
 .pl-primary {
-    background: #2563eb;
-    color: #fff;
-    font-weight: 700
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.pl-primary:hover {
+  background: #1d4ed8;
 }
 
 .pl-cancel {
-    margin-top: 8px;
-    background: #334155;
-    color: #e2e8f0
+  margin-top: 8px;
+  background: #334155;
+  color: #e2e8f0;
 }
 
 .pl-borrower {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 18px;
-    color: #cbd5e1
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  color: #cbd5e1;
 }
 
-@media(max-width:1000px) {
-    .pl-grid {
-        grid-template-columns: repeat(8, minmax(0, 1fr))
-    }
+/* =========================================
+   RESPONSIVE TABLET
+========================================= */
+
+@media (max-width: 1000px) {
+  .pl-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
 }
 
-@media(max-width:700px) {
-    .pl-stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr))
-    }
+/* =========================================
+   RESPONSIVE MOBILE
+========================================= */
 
-    .pl-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr))
-    }
+@media (max-width: 700px) {
+  .pl-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-    .pl-grid-scroll {
-        max-height: calc(100vh - 390px)
-    }
+  .pl-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .pl-grid-scroll {
+    max-height: calc(100vh - 390px);
+  }
 }
 
-@media(max-width:400px) {
-    .pl-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr))
-    }
+/* =========================================
+   RESPONSIVE HP KECIL
+========================================= */
 
-    .pl-page {
-        padding: 10px
-    }
+@media (max-width: 400px) {
+  .pl-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .pl-page {
+    padding: 10px;
+  }
 }

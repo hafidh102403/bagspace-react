@@ -1290,3 +1290,76 @@ button {
     font-size: 9px;
   }
 }
+
+
+/* =========================================
+   DARK / LIGHT MODE - BAGSPACE
+   Tema default tetap dark, layout asli tidak berubah.
+========================================= */
+:root { color-scheme: dark; }
+html[data-theme="light"] {
+  color-scheme: light;
+  --page: #f1f5f9;
+  --navy: #ffffff;
+  --panel: #ffffff;
+  --panel-light: #f8fafc;
+  --border: #dbe3ee;
+  --text: #0f172a;
+  --muted: #64748b;
+  --sidebar: #ffffff;
+}
+html[data-theme="light"] body,
+html[data-theme="light"] .dashboard-shell,
+html[data-theme="light"] .dashboard-main { background: var(--page); color: var(--text); }
+html[data-theme="light"] .sidebar { border-right-color: #dbe3ee; }
+html[data-theme="light"] .sidebar-brand { background: #eaf1ff; border-bottom-color: #dbe3ee; color: #1e3a8a; }
+html[data-theme="light"] .sidebar-logo { border-color: #93b4e8; color: #2563eb; }
+html[data-theme="light"] .sidebar-link,
+html[data-theme="light"] .sidebar-submenu-link { color: #334155; border-bottom-color: #e2e8f0; }
+html[data-theme="light"] .sidebar-link:hover,
+html[data-theme="light"] .sidebar-submenu-link:hover { background: #e2e8f0; color: #1e40af; }
+html[data-theme="light"] .sidebar-link.active,
+html[data-theme="light"] .sidebar-submenu-link.active { background: #2563eb; color: #ffffff; }
+html[data-theme="light"] .sidebar-submenu { border-left-color: #cbd5e1; }
+html[data-theme="light"] .sidebar-bottom { border-top-color: #dbe3ee; }
+html[data-theme="light"] .sidebar-bottom > span { color: #64748b; }
+html[data-theme="light"] .dashboard-header { background: #ffffff; border-bottom-color: #dbe3ee; }
+html[data-theme="light"] .profile-button,
+html[data-theme="light"] .header-menu-button,
+html[data-theme="light"] .mobile-menu-button { color: #334155; }
+html[data-theme="light"] .theme-button { color: #2563eb; }
+html[data-theme="light"] .profile-copy strong { color: #0f172a; }
+html[data-theme="light"] .profile-copy small { color: #64748b; }
+html[data-theme="light"] .profile-dropdown { background: #ffffff; border-color: #dbe3ee; box-shadow: 0 10px 24px rgb(15 23 42 / 12%); }
+html[data-theme="light"] .profile-dropdown button { color: #334155; }
+html[data-theme="light"] .profile-dropdown button:hover { background: #f1f5f9; }
+html[data-theme="light"] .profile-dropdown .dropdown-logout { color: #dc2626; }
+html[data-theme="light"] .guide-panel,
+html[data-theme="light"] .filter-panel,
+html[data-theme="light"] .chart-container { background: #ffffff; border-color: #dbe3ee; }
+html[data-theme="light"] .guide-panel h2,
+html[data-theme="light"] .filter-panel h3,
+html[data-theme="light"] .chart-heading > span { color: #0f172a; }
+html[data-theme="light"] .guide-panel p,
+html[data-theme="light"] .guide-panel ol { color: #334155; }
+html[data-theme="light"] .filter-fields { background: #f8fafc; border-color: #dbe3ee; }
+html[data-theme="light"] .filter-fields label { color: #475569; }
+html[data-theme="light"] .filter-fields select { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+html[data-theme="light"] .chart-heading small,
+html[data-theme="light"] .statistics-footnote { color: #64748b; }
+html[data-theme="light"] .category-card { background: color-mix(in srgb, var(--category-color) 9%, #ffffff); }
+html[data-theme="light"] .category-card b { color: #0f172a; }
+html[data-theme="light"] .category-card > span { color: #475569; }
+html[data-theme="light"] .statistics-footnote { border-top-color: #dbe3ee; }
+html[data-theme="light"] .other-page { color: #0f172a; }
+html[data-theme="light"] .other-page-icon { background: #dbeafe; }
+
+/* Penyesuaian komponen halaman lain tanpa mengubah posisi/ukuran layout */
+html[data-theme="light"] :is(.pl-page, .rl-page, .ml-page, .rk-container, .rk-page) { color: #0f172a; }
+html[data-theme="light"] :is(.pl-panel, .rl-panel, .ml-detail, .rk-main-card) { background: #ffffff; color: #0f172a; border-color: #dbe3ee; }
+html[data-theme="light"] :is(.pl-stats, .rl-stats, .ml-stats) > * { background: #ffffff; color: #0f172a; border-color: #dbe3ee; }
+html[data-theme="light"] :is(.pl-page, .rl-page, .ml-page, .rk-container) :is(input, select) { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+html[data-theme="light"] :is(.rl-table, .ml-table, .rk-table) { color: #0f172a; }
+html[data-theme="light"] :is(.rl-table, .ml-table, .rk-table) thead th { background: #eaf1ff; color: #334155; }
+html[data-theme="light"] :is(.rl-table, .ml-table, .rk-table) tbody tr { border-color: #e2e8f0; }
+html[data-theme="light"] :is(.pl-modal, .ml-modal) { background: #ffffff; color: #0f172a; border-color: #dbe3ee; }
