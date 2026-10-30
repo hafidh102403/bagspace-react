@@ -3,6 +3,7 @@ import MonitoringLoker from "./MonitoringLoker";
 import RiwayatLoker from "./RiwayatLoker";
 import SetupUser from "./SetupUser";
 import SetupLoker from "./SetupLoker";
+import { getVisitorStats } from "./services/api";
 import React, { useEffect, useState } from "react";
 import {
   BookOpen,
@@ -12,6 +13,7 @@ import {
   Settings,
   Users,
   UserRound,
+  UserRoundPen,
   LogOut,
   Menu,
   ChevronDown,
@@ -27,13 +29,20 @@ import {
   Grid2X2,
 } from "lucide-react";
 import "./App.css";
+import "./ProfileEdit.css";
 import RiwayatKunjungan from "./RiwayatKunjungan";
 
-const categories = [
-  { name: "MLIE", value: 0, color: "#3987ff" },
-  { name: "MPIE", value: 0, color: "#16c79a" },
-  { name: "PIWAR", value: 0, color: "#ffab19" },
-  { name: "Dosen/Tendik", value: 8, color: "#ff4e55" },
+const CATEGORY_COLORS = {
+  MLIE: "#3987ff",
+  MPIE: "#16c79a",
+  PIWAR: "#ffab19",
+  "Dosen/Tendik": "#ff4e55",
+};
+
+const MONTHS = [
+  "January", "February", "March", "April",
+  "May", "June", "July", "August",
+  "September", "October", "November", "December",
 ];
 
 function LoginPage({ onLogin }) {
@@ -250,7 +259,7 @@ function Sidebar({ activeMenu, setActiveMenu, onLogout, open, close, isAdmin }) 
   );
 }
 
-function VisitorChart() {
+function VisitorChart({ categories }) {
   const chartHeight = 180;
   const chartWidth = 460;
   const left = 30;
@@ -259,7 +268,7 @@ function VisitorChart() {
   const bottom = 25;
   const plotWidth = chartWidth - left - right;
   const plotHeight = chartHeight - top - bottom;
-  const max = 8;
+  const max = Math.max(1, ...categories.map((item) => item.value));
 
   const points = categories.map((item, index) => ({
     ...item,
@@ -291,7 +300,7 @@ function VisitorChart() {
         role="img"
         aria-label="Grafik jumlah pengunjung berdasarkan kategori"
       >
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((value) => {
+        {Array.from({ length: 5 }, (_, i) => (max / 4) * i).map((value) => {
           const y = top + plotHeight - (value / max) * plotHeight;
 
           return (
@@ -305,7 +314,7 @@ function VisitorChart() {
                 strokeWidth="1"
               />
               <text x="17" y={y + 4} fill="#91a0b8" fontSize="10" textAnchor="middle">
-                {value}
+                {Number.isInteger(value) ? value : value.toFixed(1)}
               </text>
             </g>
           );
@@ -349,14 +358,95 @@ function VisitorChart() {
 }
 
 function DashboardHome() {
-  const [month, setMonth] = useState("October");
-  const [year, setYear] = useState("2026");
+  const months = [
+    "January", "February", "March", "April",
+    "May", "June", "July", "August",
+    "September", "October", "November", "December",
+  ];
+
+  const now = new Date();
+
+  const [month, setMonth] = useState(months[now.getMonth()]);
+  const [year, setYear] = useState(String(now.getFullYear()));
   const [dateFilter, setDateFilter] = useState("Semua");
+
   const [appliedFilter, setAppliedFilter] = useState({
-    month: "October",
-    year: "2026",
+    month: months[now.getMonth()],
+    year: String(now.getFullYear()),
     date: "Semua",
   });
+
+  const [stats, setStats] = useState({
+    total: 0,
+    categories: {},
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStatistics() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const monthNumber = months.indexOf(appliedFilter.month) + 1;
+
+        const result = await getVisitorStats(
+          monthNumber,
+          Number(appliedFilter.year),
+          appliedFilter.date
+        );
+
+        if (!cancelled) {
+          setStats({
+            total: Number(result.total || 0),
+            categories: result.categories || {},
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || "Gagal mengambil statistik");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadStatistics();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedFilter, refreshCount]);
+
+  const categories = [
+    {
+      name: "MLIE",
+      value: Number(stats.categories["MLIE"] || 0),
+      color: "#3987ff",
+    },
+    {
+      name: "MPIE",
+      value: Number(stats.categories["MPIE"] || 0),
+      color: "#16c79a",
+    },
+    {
+      name: "PIWAR",
+      value: Number(stats.categories["PIWAR"] || 0),
+      color: "#ffab19",
+    },
+    {
+      name: "Dosen/Tendik",
+      value: Number(stats.categories["Dosen/Tendik"] || 0),
+      color: "#ff4e55",
+    },
+  ];
 
   return (
     <div className="dashboard-grid">
@@ -366,38 +456,68 @@ function DashboardHome() {
         </h2>
 
         <h3>PENDAHULUAN</h3>
+
         <p>
-          Selamat datang di <strong>Layanan Loker Barang Perpustakaan Politeknik APP Jakarta</strong>.
-          Sebagai bentuk dukungan terhadap keamanan dan kenyamanan, Perpustakaan
-          Politeknik APP Jakarta menyediakan fasilitas loker yang dapat digunakan
-          oleh pengunjung untuk menyimpan barang bawaan selama berada di lingkungan
-          perpustakaan. Pengguna diharapkan mengikuti panduan penggunaan loker
-          dengan baik agar fasilitas ini dapat dimanfaatkan secara aman, tertib,
-          dan bertanggung jawab.
+          Selamat datang di{" "}
+          <strong>
+            Layanan Loker Barang Perpustakaan Politeknik APP Jakarta
+          </strong>.
+          Sebagai bentuk dukungan terhadap keamanan dan kenyamanan,
+          Perpustakaan Politeknik APP Jakarta menyediakan fasilitas loker
+          yang dapat digunakan oleh pengunjung untuk menyimpan barang
+          bawaan selama berada di lingkungan perpustakaan. Pengguna
+          diharapkan mengikuti panduan penggunaan loker dengan baik agar
+          fasilitas ini dapat dimanfaatkan secara aman, tertib, dan
+          bertanggung jawab.
         </p>
 
         <h3>LANGKAH PENGGUNAAN</h3>
+
         <ol>
-          <li>Pengguna memulai proses penggunaan loker sesuai dengan ketentuan yang berlaku.</li>
-          <li>Pengguna wajib mematuhi Standar Operasional Prosedur (SOP) perpustakaan.</li>
-          <li>Pengguna memilih loker yang tersedia untuk digunakan.</li>
-          <li>Pengguna mengambil kunci sesuai dengan nomor loker yang telah dipilih.</li>
-          <li>Pengguna menyimpan barang ke dalam loker dengan tertib dan aman.</li>
-          <li>Pengguna memastikan loker telah dikunci dengan benar setelah digunakan.</li>
-          <li>Pengguna mengembalikan kunci loker ke tempat yang telah disediakan.</li>
+          <li>
+            Pengguna memulai proses penggunaan loker sesuai dengan
+            ketentuan yang berlaku.
+          </li>
+          <li>
+            Pengguna wajib mematuhi Standar Operasional Prosedur (SOP)
+            perpustakaan.
+          </li>
+          <li>
+            Pengguna memilih loker yang tersedia untuk digunakan.
+          </li>
+          <li>
+            Pengguna mengambil kunci sesuai dengan nomor loker yang
+            telah dipilih.
+          </li>
+          <li>
+            Pengguna menyimpan barang ke dalam loker dengan tertib
+            dan aman.
+          </li>
+          <li>
+            Pengguna memastikan loker telah dikunci dengan benar
+            setelah digunakan.
+          </li>
+          <li>
+            Pengguna mengembalikan kunci loker ke tempat yang
+            telah disediakan.
+          </li>
         </ol>
       </section>
 
       <section className="statistics-column">
         <div className="filter-panel">
           <h3>
-            <ChartNoAxesCombined size={14} /> STATISTIK PENGUNJUNG
+            <ChartNoAxesCombined size={14} />
+            STATISTIK PENGUNJUNG
           </h3>
 
           <div className="filter-fields">
             <label>
               TANGGAL
-              <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              >
                 <option>Semua</option>
                 <option>Hari ini</option>
                 <option>Minggu ini</option>
@@ -406,64 +526,104 @@ function DashboardHome() {
 
             <label>
               BULAN
-              <select value={month} onChange={(e) => setMonth(e.target.value)}>
-                {[
-                  "January", "February", "March", "April", "May", "June",
-                  "July", "August", "September", "October", "November", "December",
-                ].map((value) => (
-                  <option key={value}>{value}</option>
+              <select
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              >
+                {months.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
                 ))}
               </select>
             </label>
 
             <label>
               TAHUN
-              <select value={year} onChange={(e) => setYear(e.target.value)}>
-                <option>2025</option>
-                <option>2026</option>
-                <option>2027</option>
+              <select
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+              >
+                {Array.from({ length: 7 }, (_, index) => now.getFullYear() - 4 + index).map((value) => (
+                  <option key={value} value={String(value)}>{value}</option>
+                ))}
               </select>
             </label>
           </div>
 
           <button
             className="filter-button"
-            onClick={() => setAppliedFilter({ month, year, date: dateFilter })}
+            onClick={() =>
+              setAppliedFilter({
+                month,
+                year,
+                date: dateFilter,
+              })
+            }
           >
             Terapkan Filter
           </button>
+
+          <button
+            type="button"
+            className="filter-button"
+            onClick={() => setRefreshCount((count) => count + 1)}
+            disabled={loading}
+            title="Muat ulang statistik dari database"
+          >
+            <RotateCcw size={13} /> {loading ? "Memuat..." : "Refresh Data"}
+          </button>
+
+          {error && (
+            <p role="alert" style={{ color: "#ff4e55", fontSize: 12 }}>
+              Gagal memuat statistik: {error}. Pastikan API visitor_stats.php aktif.
+            </p>
+          )}
         </div>
 
         <div className="total-card">
           <div>
             <h3>TOTAL PENGUNJUNG</h3>
-            <strong>8</strong>
+
+            <strong>
+              {loading ? "..." : stats.total.toLocaleString("id-ID")}
+            </strong>
+
             <p>Semua kategori pengunjung</p>
           </div>
+
           <Users size={23} />
         </div>
 
-        <VisitorChart />
+        <VisitorChart categories={categories} />
 
         <div className="category-grid">
           {categories.map((category) => (
             <article
               className="category-card"
               key={category.name}
-              style={{ "--category-color": category.color }}
+              style={{
+                "--category-color": category.color,
+              }}
             >
               <div className="category-heading">
                 <strong>{category.name}</strong>
                 <Users size={15} />
               </div>
-              <b>{category.value}</b>
+
+              <b>
+                {loading ? "..." : category.value.toLocaleString("id-ID")}
+              </b>
+
               <span>Pengunjung</span>
             </article>
           ))}
         </div>
 
         <p className="statistics-footnote">
-          Statistik periode {appliedFilter.date.toLowerCase()}, {appliedFilter.month} {appliedFilter.year}.
+          Statistik periode{" "}
+          {appliedFilter.date.toLowerCase()},{" "}
+          {appliedFilter.month} {appliedFilter.year}.
         </p>
       </section>
     </div>
@@ -495,18 +655,117 @@ function OtherPage({ title, setActiveMenu }) {
 // DEMO LOKAL: data akun disimpan di browser, bukan sistem autentikasi produksi.
 const ACCOUNTS_KEY = "bagspace_demo_accounts_v1";
 const SESSION_KEY = "bagspace_demo_session_v1";
-const ADMIN_ACCOUNT = { id: "admin", name: "Admin Perpus", role: "admin", prodi: "-", password: "123456" };
+const DEFAULT_ADMIN_ACCOUNT = { id: "admin", name: "Admin Perpus", role: "admin", prodi: "-", password: "123456" };
+const ADMIN_PROFILE_KEY = "bagspace_demo_admin_profile_v1";
+function loadAdminAccount() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(ADMIN_PROFILE_KEY) || "null");
+    return stored && typeof stored.name === "string" && typeof stored.password === "string"
+      ? { ...DEFAULT_ADMIN_ACCOUNT, name: stored.name, password: stored.password }
+      : DEFAULT_ADMIN_ACCOUNT;
+  } catch { return DEFAULT_ADMIN_ACCOUNT; }
+}
 const ADMIN_MENUS = ["Dashboard", "Pilih Loker", "Monitoring Loker", "Riwayat Loker", "Riwayat Kunjungan", "Setup User", "Setup Loker"];
 const USER_MENUS = ["Dashboard", "Pilih Loker", "Riwayat Loker"];
 
 function loadAccounts() {
   try {
-    const data = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "[]");
-    return Array.isArray(data) ? data.filter((a) => a && a.id && a.role === "user") : [];
-  } catch { return []; }
+    const setupUsers = JSON.parse(localStorage.getItem("bagspace_users") || "[]");
+    const savedAccounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "[]");
+    const profiles = Array.isArray(savedAccounts) ? savedAccounts : [];
+    const users = Array.isArray(setupUsers) ? setupUsers : [];
+    const byId = new Map();
+
+    for (const item of profiles) {
+      const id = String(item?.id || "").trim();
+      if (id && id.toLowerCase() !== "admin") byId.set(id, { ...item, id, role: "user" });
+    }
+
+    for (const user of users) {
+      const id = String(user?.nim_nip ?? user?.nimNip ?? user?.nim ?? user?.id ?? "").trim();
+      if (!id || id.toLowerCase() === "admin") continue;
+      const previous = byId.get(id) || {};
+      byId.set(id, {
+        ...previous,
+        id,
+        name: previous.profileEdited
+          ? previous.name
+          : String(user?.nama_lengkap ?? user?.namaLengkap ?? user?.name ?? user?.nama ?? previous.name ?? "Mahasiswa"),
+        prodi: user?.prodi ?? previous.prodi ?? "-",
+        role: "user",
+        password: previous.passwordChanged ? previous.password : "123456",
+        passwordChanged: Boolean(previous.passwordChanged),
+      });
+    }
+
+    return [...byId.values()];
+  } catch (error) {
+    console.error("Gagal membaca akun BagSpace:", error);
+    return [];
+  }
 }
 
-function Dashboard({ account, onLogout }) {
+function EditProfileModal({ account, onClose, onSave }) {
+  const [name, setName] = useState(account.name || "");
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [error, setError] = useState("");
+
+  function submit(event) {
+    event.preventDefault();
+    setError("");
+    if (!name.trim()) return setError("Nama lengkap wajib diisi.");
+    const wantsPassword = Boolean(oldPassword || newPassword || confirmPassword);
+    if (wantsPassword) {
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        return setError("Lengkapi semua kolom password untuk mengganti password.");
+      }
+      if (newPassword.length < 8) return setError("Password baru minimal 8 karakter.");
+      if (newPassword !== confirmPassword) return setError("Konfirmasi password baru tidak cocok.");
+    }
+    const result = onSave({ name: name.trim(), oldPassword, newPassword });
+    if (!result.ok) return setError(result.message);
+    onClose();
+  }
+
+  return (
+    <div className="profile-edit-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <form className="profile-edit-modal" onSubmit={submit}>
+        <div className="profile-edit-heading">
+          <div><h2>Edit Profil</h2><p>Perbarui informasi akun dan password</p></div>
+          <button type="button" onClick={onClose} aria-label="Tutup">×</button>
+        </div>
+        <label>Nama Lengkap
+          <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} />
+        </label>
+        <label>NIM / ID Pengguna
+          <input value={account.id} readOnly title="ID login tidak dapat diubah di sini" />
+        </label>
+        <div className="profile-edit-section-title">Ganti Password <span>(opsional)</span></div>
+        <p className="profile-edit-hint">Kosongkan ketiga kolom jika tidak ingin mengganti password.</p>
+        <label>Password Lama
+          <input type={showPasswords ? "text" : "password"} value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} autoComplete="current-password" />
+        </label>
+        <label>Password Baru
+          <input type={showPasswords ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
+        </label>
+        <label>Konfirmasi Password Baru
+          <input type={showPasswords ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+        </label>
+        <label className="profile-edit-show"><input type="checkbox" checked={showPasswords} onChange={(e) => setShowPasswords(e.target.checked)} /> Tampilkan password</label>
+        {error && <div className="profile-edit-error" role="alert">{error}</div>}
+        <div className="profile-edit-actions">
+          <button type="button" onClick={onClose}>Batal</button>
+          <button type="submit">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function Dashboard({ account, onLogout, onSaveProfile }) {
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const userId = account.id;
   const isAdmin = account.role === "admin";
@@ -515,6 +774,7 @@ function Dashboard({ account, onLogout }) {
   const navigate = (menu) => { if (allowedMenus.includes(menu)) setActiveMenu(menu); };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("bagspace_theme") === "light" ? "light" : "dark"; }
     catch { return "dark"; }
@@ -581,15 +841,18 @@ function Dashboard({ account, onLogout }) {
 
           {profileOpen && (
             <div className="profile-dropdown">
-              {isAdmin && <button onClick={() => { navigate("Setup User"); setProfileOpen(false); }}>
-                <UserRound size={14} /> Setup User
-              </button>}
+              <button onClick={() => { setEditingProfile(true); setProfileOpen(false); }}>
+                <UserRoundPen size={14} /> Edit Profil
+              </button>
               <button className="dropdown-logout" onClick={onLogout}>
                 <LogOut size={14} /> Log Out
               </button>
             </div>
           )}
         </header>
+        {editingProfile && (
+          <EditProfileModal account={account} onClose={() => setEditingProfile(false)} onSave={onSaveProfile} />
+        )}
 
         {currentMenu === "Dashboard" ? (
           <DashboardHome />
@@ -614,29 +877,78 @@ function Dashboard({ account, onLogout }) {
 }
 
 export default function App() {
-  const [accounts, setAccounts] = useState(loadAccounts);
   const [account, setAccount] = useState(() => {
     try {
       const id = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
       if (!id) return null;
-      if (id === "admin") return { ...ADMIN_ACCOUNT, password: undefined };
-      const found = loadAccounts().find((a) => a.id === id);
-      return found ? { ...found, password: undefined } : null;
-    } catch { return null; }
+      const found = id === "admin"
+        ? loadAdminAccount()
+        : loadAccounts().find((item) => item.id === id);
+      if (!found) return null;
+      const { password: _hidden, ...safeAccount } = found;
+      return safeAccount;
+    } catch {
+      return null;
+    }
   });
 
   function handleLogin(id, password, remember) {
-    const key = id.trim();
+    const key = String(id).trim();
     const found = key.toLowerCase() === "admin"
-      ? ADMIN_ACCOUNT
-      : accounts.find((a) => a.id === key);
-    if (!found || found.password !== password) return false;
+      ? loadAdminAccount()
+      : loadAccounts().find((item) => item.id === key);
+
+    if (!found) return false;
+    // Login admin tetap menggunakan password yang sebelumnya tersimpan.
+    const expectedPassword = found.role === "admin"
+      ? found.password
+      : found.passwordChanged ? found.password : "123456";
+    if (password !== expectedPassword) return false;
+
     const { password: _hidden, ...safeAccount } = found;
     setAccount(safeAccount);
     localStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
     (remember ? localStorage : sessionStorage).setItem(SESSION_KEY, found.id);
     return true;
+  }
+
+  function handleSaveProfile({ name, oldPassword, newPassword }) {
+    const current = account?.id === "admin"
+      ? loadAdminAccount()
+      : loadAccounts().find((item) => item.id === account?.id);
+    if (!current) return { ok: false, message: "Akun tidak ditemukan." };
+
+    const expectedPassword = current.role === "admin"
+      ? current.password
+      : current.passwordChanged ? current.password : "123456";
+    if (newPassword && oldPassword !== expectedPassword) {
+      return { ok: false, message: "Password lama salah." };
+    }
+
+    const updated = {
+      ...current,
+      name,
+      ...(current.role !== "admin" ? { profileEdited: true } : {}),
+      ...(newPassword ? { password: newPassword, ...(current.role !== "admin" ? { passwordChanged: true } : {}) } : {}),
+    };
+
+    try {
+      if (updated.role === "admin") {
+        localStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify({ name: updated.name, password: updated.password }));
+      } else {
+        const existing = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "[]");
+        const saved = Array.isArray(existing) ? existing : [];
+        const next = saved.filter((item) => String(item.id) !== updated.id);
+        next.push(updated);
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
+      }
+      const { password: _hidden, ...safeAccount } = updated;
+      setAccount(safeAccount);
+      return { ok: true };
+    } catch {
+      return { ok: false, message: "Gagal menyimpan perubahan di browser." };
+    }
   }
 
   function handleLogout() {
@@ -646,28 +958,11 @@ export default function App() {
     localStorage.removeItem("bagspace_user");
   }
 
-  function createAccount(data) {
-    if (!data.name || !data.id || !data.password) return { ok: false, message: "Lengkapi semua kolom." };
-    if (data.id.toLowerCase() === "admin" || accounts.some((a) => a.id === data.id)) {
-      return { ok: false, message: "NIM sudah digunakan." };
-    }
-    if (data.password.length < 8) return { ok: false, message: "Password minimal 8 karakter." };
-    const next = [...accounts, { ...data, role: "user" }];
-    setAccounts(next);
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
-    return { ok: true, message: "Akun mahasiswa berhasil dibuat (demo lokal)." };
-  }
-
-  function deleteAccount(id) {
-    const next = accounts.filter((a) => a.id !== id);
-    setAccounts(next);
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
-  }
-
   return account ? (
     <Dashboard
       account={account}
       onLogout={handleLogout}
+      onSaveProfile={handleSaveProfile}
     />
   ) : (
     <LoginPage onLogin={handleLogin} />

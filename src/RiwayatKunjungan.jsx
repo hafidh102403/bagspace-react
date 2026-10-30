@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import {
   Search,
@@ -99,54 +98,110 @@ export default function RiwayatKunjungan({
     setPage(1);
   }
 
-  function exportExcel() {
+  async function exportExcel() {
     if (!isAdmin) return;
 
-    const headers = [
-      "No",
-      "Nama",
-      "NIM/NIP",
-      "Role",
-      "Prodi",
-      "Tanggal",
-      "Jam Masuk",
-      "Jam Keluar",
-    ];
+    try {
+      const ExcelJS = (await import("exceljs")).default;
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "BagSpace";
+      workbook.created = new Date();
 
-    const rows = dataFiltered.map((item, index) => [
-      index + 1,
-      item.nama,
-      item.nim,
-      item.role,
-      item.prodi,
-      item.tanggal,
-      item.masuk,
-      item.keluar,
-    ]);
+      const sheet = workbook.addWorksheet("Riwayat Kunjungan", {
+        views: [{ state: "frozen", ySplit: 6 }],
+        pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1 },
+      });
 
-    const csv = [headers, ...rows]
-      .map((row) =>
-        row
-          .map((value) =>
-            `"${String(value).replace(/"/g, '""')}"`
-          )
-          .join(",")
-      )
-      .join("\r\n");
+      const widths = [8, 28, 20, 19, 20, 18, 15, 15];
+      widths.forEach((width, index) => {
+        sheet.getColumn(index + 1).width = width;
+      });
 
-    const blob = new Blob(["\uFEFF" + csv], {
-      type: "text/csv;charset=utf-8;",
-    });
+      sheet.mergeCells("A1:H2");
+      const titleCell = sheet.getCell("A1");
+      titleCell.value = "LAPORAN RIWAYAT KUNJUNGAN";
+      titleCell.font = { name: "Calibri", size: 17, bold: true, color: { argb: "FFFFFFFF" } };
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E3A8A" } };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
+      sheet.getRow(1).height = 25;
+      sheet.getRow(2).height = 18;
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+      sheet.mergeCells("A3:H3");
+      const subtitle = sheet.getCell("A3");
+      subtitle.value = "PERPUSTAKAAN POLITEKNIK APP JAKARTA • BAGSPACE";
+      subtitle.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FF1E40AF" } };
+      subtitle.alignment = { horizontal: "center", vertical: "middle" };
+      sheet.getRow(3).height = 24;
 
-    link.href = url;
-    link.download = "Riwayat_Kunjungan_BagSpace.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      sheet.mergeCells("A4:H4");
+      const filterInfo = sheet.getCell("A4");
+      filterInfo.value = `Filter: ${search || "Semua nama"} | ${tanggalAwal || "Awal"} s.d. ${tanggalAkhir || "Akhir"} | ${role || "Semua role"} | ${prodi || "Semua prodi"}`;
+      filterInfo.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF475569" } };
+      filterInfo.alignment = { vertical: "middle" };
+      sheet.getRow(4).height = 22;
+
+      sheet.mergeCells("A5:H5");
+      const countInfo = sheet.getCell("A5");
+      countInfo.value = `Total data: ${dataFiltered.length} kunjungan`;
+      countInfo.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FF0F172A" } };
+      sheet.getRow(5).height = 22;
+
+      const headers = ["No", "Nama Pengunjung", "NIM / NIP", "Role", "Prodi", "Tanggal", "Jam Masuk", "Jam Keluar"];
+      const headerRow = sheet.getRow(6);
+      headerRow.values = headers;
+      headerRow.height = 27;
+      headerRow.eachCell((cell) => {
+        cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = { bottom: { style: "thin", color: { argb: "FF93C5FD" } } };
+      });
+
+      dataFiltered.forEach((item, index) => {
+        const row = sheet.addRow([
+          index + 1,
+          item.nama,
+          String(item.nim),
+          item.role,
+          item.prodi,
+          item.tanggal,
+          item.masuk || "-",
+          item.keluar || "-",
+        ]);
+        row.height = 23;
+        row.eachCell((cell, colNumber) => {
+          cell.font = { name: "Calibri", size: 10, color: { argb: "FF0F172A" } };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: index % 2 === 0 ? "FFF1F5F9" : "FFFFFFFF" },
+          };
+          cell.alignment = {
+            vertical: "middle",
+            horizontal: [1, 6, 7, 8].includes(colNumber) ? "center" : "left",
+          };
+          cell.border = { bottom: { style: "hair", color: { argb: "FFE2E8F0" } } };
+        });
+        row.getCell(3).numFmt = "@";
+      });
+
+      sheet.autoFilter = { from: "A6", to: `H${Math.max(6, 6 + dataFiltered.length)}` };
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Riwayat_Kunjungan_BagSpace_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error("Export Excel gagal:", error);
+      alert("Gagal export Excel. Pastikan paket exceljs sudah terpasang.");
+    }
   }
 
   return (
