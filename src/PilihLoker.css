@@ -446,3 +446,101 @@
     padding: 10px;
   }
 }
+
+/* =====================================
+   TOOLTIP MENGIKUTI KURSOR MOUSE
+===================================== */
+
+.pl-cursor-tooltip {
+  position: fixed;
+  z-index: 99999;
+  width: 245px;
+  max-width: calc(100vw - 16px);
+  padding: 12px;
+  border: 1px solid #35445b;
+  border-radius: 10px;
+  background: #0e1729;
+  color: #e9eff9;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.pl-tooltip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 9px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid #35445b;
+}
+
+.pl-tooltip-header strong {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pl-tooltip-header span {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pl-tooltip-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  font-size: 10px;
+}
+
+.pl-tooltip-row span {
+  color: #9aaac1;
+  white-space: nowrap;
+}
+
+.pl-tooltip-row b {
+  color: #e9eff9;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* LIGHT MODE */
+
+body.light-mode .pl-cursor-tooltip,
+body.light .pl-cursor-tooltip,
+html.light .pl-cursor-tooltip,
+html[data-theme="light"] .pl-cursor-tooltip {
+  background: #ffffff;
+  color: #1e293b;
+  border-color: #e2e8f0;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15);
+}
+
+body.light-mode .pl-tooltip-header,
+body.light .pl-tooltip-header,
+html.light .pl-tooltip-header,
+html[data-theme="light"] .pl-tooltip-header {
+  border-color: #e2e8f0;
+}
+
+body.light-mode .pl-tooltip-row b,
+body.light .pl-tooltip-row b,
+html.light .pl-tooltip-row b,
+html[data-theme="light"] .pl-tooltip-row b {
+  color: #1e293b;
+}
+
+body.light-mode .pl-tooltip-row span,
+body.light .pl-tooltip-row span,
+html.light .pl-tooltip-row span,
+html[data-theme="light"] .pl-tooltip-row span {
+  color: #64748b;
+}

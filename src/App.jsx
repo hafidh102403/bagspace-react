@@ -596,7 +596,7 @@ function Dashboard({ account, onLogout }) {
         ) : currentMenu === "Riwayat Kunjungan" ? (
           <RiwayatKunjungan userId={userId} isAdmin={isAdmin} />
         ) : currentMenu === "Pilih Loker" ? (
-          <PilihLoker userId={userId} currentUser={account} isAdmin={isAdmin} />
+          <PilihLoker user={account} />
         ) : currentMenu === "Monitoring Loker" ? (
           <MonitoringLoker />
         ) : currentMenu === "Riwayat Loker" ? (

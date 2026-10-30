@@ -1,91 +1,565 @@
-import React, { useMemo, useState } from "react";
-import { LockKeyhole, CheckCircle2, AlertTriangle, RotateCcw, X } from "lucide-react";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { LockKeyhole, X } from "lucide-react";
 import "./PilihLoker.css";
 
 const STORAGE_KEY = "bagspace_locker_demo_v1";
+const HISTORY_KEY = "bagspace_locker_history_v1";
+const LOCKER_EVENT = "bagspace-lockers-updated";
+const HISTORY_EVENT = "bagspace-locker-history-updated";
 const TOTAL = 75;
-const zoneOf = (number) => number <= 28 ? "Kuning" : number <= 56 ? "Hijau" : "Merah";
-const zoneColors = { Kuning: "#eab308", Hijau: "#22c55e", Merah: "#ef4444" };
-const initialLockers = () => Array.from({ length: TOTAL }, (_, index) => ({ number: index + 1, status: "tersedia", borrower: "" }));
+
+const zoneOf = (number) =>
+  number <= 28 ? "Kuning" : number <= 56 ? "Hijau" : "Merah";
+
+const zoneColors = {
+  Kuning: "#eab308",
+  Hijau: "#22c55e",
+  Merah: "#ef4444",
+};
+
+const initialLockers = () =>
+  Array.from({ length: TOTAL }, (_, index) => ({
+    id: index + 1,
+    number: index + 1,
+    zone: zoneOf(index + 1),
+    status: "tersedia",
+    borrower: "",
+    userId: "",
+    borrowedAt: null,
+    returnedAt: null,
+  }));
 
 function loadLockers() {
+  const defaults = initialLockers();
+
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (Array.isArray(saved) && saved.length === TOTAL && saved.every((x, i) => x.number === i + 1 && ["tersedia", "dipinjam", "rusak"].includes(x.status))) return saved;
-  } catch { /* Invalid or unavailable storage */ }
-  return initialLockers();
+    const saved = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) || "null"
+    );
+
+    if (!Array.isArray(saved)) return defaults;
+
+    const byNumber = new Map(
+      saved
+        .filter(
+          (item) =>
+            item &&
+            Number.isInteger(Number(item.number))
+        )
+        .map((item) => [Number(item.number), item])
+    );
+
+    return defaults.map((locker) => {
+      const stored = byNumber.get(locker.number);
+
+      if (!stored) return locker;
+
+      return {
+        ...locker,
+        ...stored,
+        number: locker.number,
+        status: ["tersedia", "dipinjam", "rusak"].includes(
+          stored.status
+        )
+          ? stored.status
+          : "tersedia",
+      };
+    });
+  } catch (error) {
+    console.error("Gagal membaca data loker:", error);
+    return defaults;
+  }
 }
 
-export default function PilihLoker({ userId = "admin" }) {
+function formatBorrowedAt(value) {
+  if (!value) {
+    return {
+      date: "Belum tercatat",
+      time: "Belum tercatat",
+    };
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return {
+      date: "Tidak valid",
+      time: "Tidak valid",
+    };
+  }
+
+  return {
+    date: date.toLocaleDateString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }),
+    time:
+      date.toLocaleTimeString("id-ID", {
+        timeZone: "Asia/Jakarta",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }) + " WIB",
+  };
+}
+
+function saveBorrowHistory(locker, borrowedAt) {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(HISTORY_KEY) || "[]"
+    );
+
+    const history = Array.isArray(saved) ? saved : [];
+
+    const record = {
+      id:
+        globalThis.crypto?.randomUUID?.() ||
+        `${Date.now()}-${locker.number}`,
+      number: locker.number,
+      lockerNumber: locker.number,
+      zone: zoneOf(locker.number),
+      action: "pinjam",
+      status: "dipinjam",
+      borrower: locker.borrower,
+      userId: locker.userId,
+      borrowedAt,
+      timestamp: borrowedAt,
+      createdAt: borrowedAt,
+    };
+
+    localStorage.setItem(
+      HISTORY_KEY,
+      JSON.stringify([record, ...history])
+    );
+
+    window.dispatchEvent(new Event(HISTORY_EVENT));
+    return true;
+  } catch (error) {
+    console.error("Gagal menyimpan riwayat:", error);
+    return false;
+  }
+}
+
+export default function PilihLoker({ user = null }) {
   const [lockers, setLockers] = useState(loadLockers);
   const [zone, setZone] = useState("Semua");
-  const [selected, setSelected] = useState(null);
-  const [borrower, setBorrower] = useState("");
-  const [notice, setNotice] = useState("");
   const [statusFilter, setStatusFilter] = useState("Semua");
+  const [notice, setNotice] = useState("");
 
-  const counts = useMemo(() => ({
-    tersedia: lockers.filter((l) => l.status === "tersedia").length,
-    dipinjam: lockers.filter((l) => l.status === "dipinjam").length,
-    rusak: lockers.filter((l) => l.status === "rusak").length,
-  }), [lockers]);
+  const [hoveredLocker, setHoveredLocker] = useState(null);
+  const [mousePosition, setMousePosition] = useState({
+    x: 0,
+    y: 0,
+  });
 
-  const visible = lockers.filter((l) => (zone === "Semua" || zoneOf(l.number) === zone) && (statusFilter === "Semua" || l.status === statusFilter));
-  const current = selected == null ? null : lockers.find((l) => l.number === selected);
+  // Identitas akun login, berlaku untuk semua role.
+  const borrowerName = String(
+    user?.nama_lengkap ||
+      user?.name ||
+      user?.nama ||
+      ""
+  ).trim();
 
-  function updateLocker(number, status, name = "") {
-    const next = lockers.map((l) => l.number === number ? { ...l, status, borrower: name } : l);
-    setLockers(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { setNotice("Perubahan hanya tersimpan sementara karena penyimpanan browser tidak tersedia."); }
-    setSelected(null);
-    setBorrower("");
+  const borrowerId = String(
+    user?.id ??
+      user?.nim_nip ??
+      user?.email ??
+      ""
+  ).trim();
+
+  const borrowerRole = String(user?.role || "").trim();
+
+  const isLoggedIn = Boolean(borrowerName && borrowerId);
+
+  function refresh() {
+    setLockers(loadLockers());
   }
 
-  function borrow() {
-    if (!current || current.status !== "tersedia") return;
-    if (!borrower.trim()) { setNotice("Masukkan nama atau NIM/NIP peminjam terlebih dahulu."); return; }
-    updateLocker(current.number, "dipinjam", borrower.trim());
-    setNotice(`Loker ${current.number} berhasil dipinjam (data demo).`);
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (
+        event.key === STORAGE_KEY ||
+        event.key === null
+      ) {
+        refresh();
+      }
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(LOCKER_EVENT, refresh);
+    window.addEventListener("focus", refresh);
+    document.addEventListener(
+      "visibilitychange",
+      onVisible
+    );
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(LOCKER_EVENT, refresh);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener(
+        "visibilitychange",
+        onVisible
+      );
+    };
+  }, []);
+
+  const counts = useMemo(
+    () => ({
+      tersedia: lockers.filter(
+        (locker) => locker.status === "tersedia"
+      ).length,
+      dipinjam: lockers.filter(
+        (locker) => locker.status === "dipinjam"
+      ).length,
+      rusak: lockers.filter(
+        (locker) => locker.status === "rusak"
+      ).length,
+    }),
+    [lockers]
+  );
+
+  const visible = useMemo(
+    () =>
+      lockers.filter(
+        (locker) =>
+          (zone === "Semua" ||
+            zoneOf(locker.number) === zone) &&
+          (statusFilter === "Semua" ||
+            locker.status === statusFilter)
+      ),
+    [lockers, zone, statusFilter]
+  );
+
+  function borrowLocker(number) {
+    setHoveredLocker(null);
+
+    if (!isLoggedIn) {
+      setNotice(
+        "Data akun login belum terbaca. Silakan login terlebih dahulu."
+      );
+      return;
+    }
+
+    const latest = loadLockers();
+
+    const target = latest.find(
+      (locker) => locker.number === number
+    );
+
+    if (!target || target.status !== "tersedia") {
+      setLockers(latest);
+      setNotice(
+        `Loker ${String(number).padStart(2, "0")} tidak tersedia.`
+      );
+      return;
+    }
+
+    const activeLocker = latest.find(
+      (locker) =>
+        locker.status === "dipinjam" &&
+        String(locker.userId || "") === borrowerId
+    );
+
+    if (activeLocker) {
+      setNotice(
+        `Akun ${borrowerName} masih meminjam Loker ${String(
+          activeLocker.number
+        ).padStart(2, "0")}. Pengembalian dilakukan melalui admin.`
+      );
+      return;
+    }
+
+    const borrowedAt = new Date().toISOString();
+
+    const updatedLocker = {
+      ...target,
+      status: "dipinjam",
+      borrower: borrowerName,
+      userId: borrowerId,
+      borrowerRole,
+      borrowedAt,
+      returnedAt: null,
+    };
+
+    const updated = latest.map((locker) =>
+      locker.number === number ? updatedLocker : locker
+    );
+
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(updated)
+      );
+
+      setLockers(updated);
+      window.dispatchEvent(new Event(LOCKER_EVENT));
+
+      const historySaved = saveBorrowHistory(
+        updatedLocker,
+        borrowedAt
+      );
+
+      setNotice(
+        historySaved
+          ? `Loker ${String(number).padStart(2, "0")} berhasil dipinjam atas nama ${borrowerName}.`
+          : `Loker berhasil dipinjam, tetapi riwayat gagal disimpan.`
+      );
+    } catch (error) {
+      console.error("Gagal meminjam loker:", error);
+      setNotice("Peminjaman gagal disimpan.");
+    }
   }
+
+  function handleLockerClick(locker) {
+    if (locker.status === "tersedia") {
+      borrowLocker(locker.number);
+    } else if (locker.status === "rusak") {
+      setNotice("Loker rusak dan tidak dapat dipinjam.");
+    }
+  }
+
+  function handleMouseEnter(event, locker) {
+    if (locker.status !== "dipinjam") return;
+
+    setHoveredLocker(locker);
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  function handleMouseMove(event, locker) {
+    if (locker.status !== "dipinjam") return;
+
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  const tooltipWidth = 245;
+  const tooltipHeight = 175;
+  const tooltipGap = 16;
+
+  const viewportWidth =
+    typeof window !== "undefined" ? window.innerWidth : 1024;
+  const viewportHeight =
+    typeof window !== "undefined" ? window.innerHeight : 768;
+
+  const tooltipLeft = Math.max(
+    8,
+    Math.min(
+      mousePosition.x + tooltipGap,
+      viewportWidth - tooltipWidth - 8
+    )
+  );
+
+  const tooltipTop = Math.max(
+    8,
+    Math.min(
+      mousePosition.y + tooltipGap,
+      viewportHeight - tooltipHeight - 8
+    )
+  );
+
+  const hoveredTime = formatBorrowedAt(
+    hoveredLocker?.borrowedAt ||
+      hoveredLocker?.borrowed_at ||
+      hoveredLocker?.startTime
+  );
 
   return (
     <div className="pl-page">
       <div className="pl-header">
-        <div><h2>Pilih Loker</h2><p>Peminjaman loker Perpustakaan Politeknik APP Jakarta</p></div>
-        <span className="pl-total"><LockKeyhole size={15} /> 75 Loker</span>
+        <div>
+          <h2>Pilih Loker</h2>
+          <p>
+            Peminjaman loker Perpustakaan Politeknik APP Jakarta
+          </p>
+        </div>
+
+        <span className="pl-total">
+          <LockKeyhole size={15} />
+          75 Loker
+        </span>
       </div>
 
       <div className="pl-stats">
-        <div><span>Total Loker</span><strong>75</strong></div>
-        <div><span>Tersedia</span><strong>{counts.tersedia}</strong></div>
-        <div><span>Dipinjam</span><strong>{counts.dipinjam}</strong></div>
-        <div><span>Rusak</span><strong>{counts.rusak}</strong></div>
+        <div>
+          <span>Total Loker</span>
+          <strong>{TOTAL}</strong>
+        </div>
+        <div>
+          <span>Tersedia</span>
+          <strong>{counts.tersedia}</strong>
+        </div>
+        <div>
+          <span>Dipinjam</span>
+          <strong>{counts.dipinjam}</strong>
+        </div>
+        <div>
+          <span>Rusak</span>
+          <strong>{counts.rusak}</strong>
+        </div>
       </div>
 
       <section className="pl-panel">
         <div className="pl-toolbar">
           <div className="pl-tabs" aria-label="Filter zona">
-            {["Semua", "Kuning", "Hijau", "Merah"].map((z) => <button type="button" key={z} className={zone === z ? "selected" : ""} onClick={() => setZone(z)}>{z === "Semua" ? "Semua Zona" : `Zona ${z}`}</button>)}
+            {["Semua", "Kuning", "Hijau", "Merah"].map(
+              (item) => (
+                <button
+                  type="button"
+                  key={item}
+                  className={zone === item ? "selected" : ""}
+                  onClick={() => setZone(item)}
+                >
+                  {item === "Semua"
+                    ? "Semua Zona"
+                    : `Zona ${item}`}
+                </button>
+              )
+            )}
           </div>
-          <select aria-label="Filter status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="Semua">Semua Status</option><option value="tersedia">Tersedia</option><option value="dipinjam">Dipinjam</option><option value="rusak">Rusak</option>
+
+          <select
+            aria-label="Filter status"
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(event.target.value)
+            }
+          >
+            <option value="Semua">Semua Status</option>
+            <option value="tersedia">Tersedia</option>
+            <option value="dipinjam">Dipinjam</option>
+            <option value="rusak">Rusak</option>
           </select>
         </div>
-        <div className="pl-legend"><span><i className="pl-dot available" /> Tersedia</span><span><i className="pl-dot occupied" /> Dipinjam</span><span><i className="pl-dot broken" /> Rusak</span></div>
-        {notice && <div className="pl-notice" role="status">{notice}<button type="button" onClick={() => setNotice("")} aria-label="Tutup pemberitahuan"><X size={14} /></button></div>}
-        <div className="pl-grid-scroll">
-          {visible.length ? <div className="pl-grid">{visible.map((l) => <button type="button" key={l.number} onClick={() => { setSelected(l.number); setBorrower(userId === "admin" ? "" : userId); setNotice(""); }} className={`pl-locker ${l.status}`} style={{ "--zone-color": zoneColors[zoneOf(l.number)] }} title={`Loker ${l.number}: ${l.status}`}><span className="pl-locker-zone" /><LockKeyhole size={16} /><strong>{String(l.number).padStart(2, "0")}</strong></button>)}</div> : <div className="pl-empty">Tidak ada loker yang sesuai filter.</div>}
+
+        <div className="pl-legend">
+          <span>
+            <i className="pl-dot available" />
+            Tersedia
+          </span>
+          <span>
+            <i className="pl-dot occupied" />
+            Dipinjam
+          </span>
+          <span>
+            <i className="pl-dot broken" />
+            Rusak
+          </span>
         </div>
-        <div className="pl-footnote">Klik nomor loker untuk melihat detail atau melakukan peminjaman. Data saat ini hanya simulasi di browser.</div>
+
+        {notice && (
+          <div className="pl-notice" role="status">
+            <span>{notice}</span>
+            <button
+              type="button"
+              onClick={() => setNotice("")}
+              aria-label="Tutup pemberitahuan"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        <div className="pl-grid-scroll">
+          {visible.length > 0 ? (
+            <div className="pl-grid">
+              {visible.map((locker) => (
+                <button
+                  type="button"
+                  key={locker.number}
+                  onClick={() => handleLockerClick(locker)}
+                  onMouseEnter={(event) =>
+                    handleMouseEnter(event, locker)
+                  }
+                  onMouseMove={(event) =>
+                    handleMouseMove(event, locker)
+                  }
+                  onMouseLeave={() => setHoveredLocker(null)}
+                  className={`pl-locker ${locker.status}`}
+                  style={{
+                    "--zone-color":
+                      zoneColors[zoneOf(locker.number)],
+                  }}
+                  title={
+                    locker.status === "dipinjam"
+                      ? undefined
+                      : `Loker ${locker.number}: ${locker.status}`
+                  }
+                  aria-label={`Loker ${locker.number}, ${locker.status}`}
+                >
+                  <span className="pl-locker-zone" />
+                  <LockKeyhole size={16} />
+                  <strong>
+                    {String(locker.number).padStart(2, "0")}
+                  </strong>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="pl-empty">
+              Tidak ada loker yang sesuai filter.
+            </div>
+          )}
+        </div>
+
+        <div className="pl-footnote">
+          Klik loker tersedia untuk langsung meminjam.
+          Arahkan kursor ke loker dipinjam untuk melihat
+          informasi peminjam.
+        </div>
       </section>
 
-      {current && <div className="pl-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setSelected(null); }}>
-        <div className="pl-modal" role="dialog" aria-modal="true" aria-label={`Detail loker ${current.number}`}>
-          <div className="pl-modal-heading"><div><h3>Loker {String(current.number).padStart(2, "0")}</h3><p>Zona {zoneOf(current.number)} · {current.status === "tersedia" ? "Tersedia" : current.status === "dipinjam" ? "Sedang dipinjam" : "Rusak"}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Tutup"><X size={18} /></button></div>
-          {current.status === "tersedia" ? <><label className="pl-field">Nama / NIM / NIP peminjam<input value={borrower} onChange={(e) => setBorrower(e.target.value)} placeholder="Masukkan identitas peminjam" autoFocus /></label><button type="button" className="pl-primary" onClick={borrow}><CheckCircle2 size={16} /> Konfirmasi Peminjaman</button></> : current.status === "dipinjam" ? <><p className="pl-borrower">Peminjam: <strong>{current.borrower || "Tidak tercatat"}</strong></p><button type="button" className="pl-primary" onClick={() => { updateLocker(current.number, "tersedia"); setNotice(`Loker ${current.number} berhasil dikembalikan (data demo).`); }}><RotateCcw size={16} /> Kembalikan Loker</button></> : <p className="pl-borrower"><AlertTriangle size={16} /> Loker rusak dan tidak dapat dipinjam.</p>}
-          <button type="button" className="pl-cancel" onClick={() => setSelected(null)}>Batal</button>
+      {hoveredLocker && (
+        <div
+          className="pl-cursor-tooltip"
+          style={{
+            left: tooltipLeft,
+            top: tooltipTop,
+          }}
+          role="tooltip"
+        >
+          <div className="pl-tooltip-header">
+            <strong>
+              Loker {String(hoveredLocker.number).padStart(2, "0")}
+            </strong>
+            <span>Dipinjam</span>
+          </div>
+
+          <div className="pl-tooltip-row">
+            <span>Zona</span>
+            <b>{zoneOf(hoveredLocker.number)}</b>
+          </div>
+
+          <div className="pl-tooltip-row">
+            <span>Nama</span>
+            <b>{hoveredLocker.borrower || "Tidak tercatat"}</b>
+          </div>
+
+          <div className="pl-tooltip-row">
+            <span>Tanggal</span>
+            <b>{hoveredTime.date}</b>
+          </div>
+
+          <div className="pl-tooltip-row">
+            <span>Jam</span>
+            <b>{hoveredTime.time}</b>
+          </div>
         </div>
-      </div>}
+      )}
     </div>
   );
 }
