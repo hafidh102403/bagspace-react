@@ -1,13 +1,10 @@
-
+﻿
 import React, { useEffect, useMemo, useState } from "react";
 import { LockKeyhole, X } from "lucide-react";
 import "./PilihLoker.css";
+import { getLockers, borrowLockerAPI } from "./services/api";
 
-const STORAGE_KEY = "bagspace_locker_demo_v1";
-const HISTORY_KEY = "bagspace_locker_history_v1";
 const LOCKER_EVENT = "bagspace-lockers-updated";
-const HISTORY_EVENT = "bagspace-locker-history-updated";
-const VISITOR_EVENT = "bagspace-visitors-updated";
 const TOTAL = 75;
 
 const zoneOf = (number) =>
@@ -18,62 +15,6 @@ const zoneColors = {
   Hijau: "#22c55e",
   Merah: "#ef4444",
 };
-
-function initialLockers() {
-  return Array.from({ length: TOTAL }, (_, index) => ({
-    id: index + 1,
-    number: index + 1,
-    zone: zoneOf(index + 1),
-    status: "tersedia",
-    borrower: "",
-    userId: "",
-    prodi: "",
-    borrowedAt: null,
-    returnedAt: null,
-  }));
-}
-
-function loadLockers() {
-  const defaults = initialLockers();
-
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem(STORAGE_KEY) || "null"
-    );
-
-    if (!Array.isArray(saved)) return defaults;
-
-    const byNumber = new Map(
-      saved
-        .filter(
-          (item) =>
-            item &&
-            Number.isInteger(Number(item.number))
-        )
-        .map((item) => [Number(item.number), item])
-    );
-
-    return defaults.map((locker) => {
-      const stored = byNumber.get(locker.number);
-
-      if (!stored) return locker;
-
-      return {
-        ...locker,
-        ...stored,
-        number: locker.number,
-        status: ["tersedia", "dipinjam", "rusak"].includes(
-          stored.status
-        )
-          ? stored.status
-          : "tersedia",
-      };
-    });
-  } catch (error) {
-    console.error("Gagal membaca data loker:", error);
-    return defaults;
-  }
-}
 
 function formatBorrowedAt(value) {
   if (!value) {
@@ -127,55 +68,8 @@ function normalizeProdi(value) {
   return prodi;
 }
 
-function saveBorrowHistory(locker, borrowedAt) {
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem(HISTORY_KEY) || "[]"
-    );
-
-    const history = Array.isArray(saved) ? saved : [];
-
-    const record = {
-      id:
-        globalThis.crypto?.randomUUID?.() ||
-        `${Date.now()}-${locker.number}`,
-
-      number: locker.number,
-      lockerNumber: locker.number,
-      zone: zoneOf(locker.number),
-
-      action: "pinjam",
-      status: "dipinjam",
-
-      borrower: locker.borrower,
-      userId: locker.userId,
-      borrowerRole: locker.borrowerRole,
-
-      prodi: locker.prodi || "",
-      borrowerProdi: locker.prodi || "",
-
-      borrowedAt,
-      timestamp: borrowedAt,
-      createdAt: borrowedAt,
-    };
-
-    localStorage.setItem(
-      HISTORY_KEY,
-      JSON.stringify([record, ...history])
-    );
-
-    window.dispatchEvent(new Event(HISTORY_EVENT));
-    window.dispatchEvent(new Event(VISITOR_EVENT));
-
-    return true;
-  } catch (error) {
-    console.error("Gagal menyimpan riwayat:", error);
-    return false;
-  }
-}
-
 export default function PilihLoker({ user = null }) {
-  const [lockers, setLockers] = useState(loadLockers);
+  const [lockers, setLockers] = useState([]);
   const [zone, setZone] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
   const [notice, setNotice] = useState("");
@@ -210,19 +104,29 @@ export default function PilihLoker({ user = null }) {
       ""
   );
 
-  const isLoggedIn = Boolean(borrowerName && borrowerId);
-
-  function refresh() {
-    setLockers(loadLockers());
-  }
+  const isLoggedIn = Boolean(borrowerName && borrowerId && user?.token);
 
   useEffect(() => {
-    const onStorage = (event) => {
-      if (
-        event.key === STORAGE_KEY ||
-        event.key === null
-      ) {
-        refresh();
+    let active = true;
+
+    const refresh = async () => {
+      if (!user?.token) {
+        if (active) setLockers([]);
+        return;
+      }
+
+      try {
+        const data = await getLockers(user.token);
+
+        if (active) {
+          setLockers(data);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data loker:", error);
+
+        if (active) {
+          setNotice(error.message || "Gagal mengambil data loker.");
+        }
       }
     };
 
@@ -232,21 +136,19 @@ export default function PilihLoker({ user = null }) {
       }
     };
 
-    window.addEventListener("storage", onStorage);
+    refresh();
+
     window.addEventListener(LOCKER_EVENT, refresh);
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
-      window.removeEventListener("storage", onStorage);
+      active = false;
       window.removeEventListener(LOCKER_EVENT, refresh);
       window.removeEventListener("focus", refresh);
-      document.removeEventListener(
-        "visibilitychange",
-        onVisible
-      );
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [user?.token]);
 
   const counts = useMemo(
     () => ({
@@ -277,90 +179,42 @@ export default function PilihLoker({ user = null }) {
     [lockers, zone, statusFilter]
   );
 
-  function borrowLocker(number) {
+  async function borrowLocker(number) {
     setHoveredLocker(null);
 
     if (!isLoggedIn) {
-      setNotice(
-        "Data akun login belum terbaca. Silakan login terlebih dahulu."
-      );
+      setNotice("Sesi login tidak tersedia. Silakan login kembali.");
       return;
     }
-
-    const latest = loadLockers();
-
-    const target = latest.find(
-      (locker) => locker.number === number
-    );
-
-    if (!target || target.status !== "tersedia") {
-      setLockers(latest);
-      setNotice(
-        `Loker ${String(number).padStart(2, "0")} tidak tersedia.`
-      );
-      return;
-    }
-
-    const activeLocker = latest.find(
-      (locker) =>
-        locker.status === "dipinjam" &&
-        String(locker.userId || "") === borrowerId
-    );
-
-    if (activeLocker) {
-      setNotice(
-        `Akun ${borrowerName} masih meminjam Loker ${String(
-          activeLocker.number
-        ).padStart(2, "0")}. Pengembalian dilakukan melalui admin.`
-      );
-      return;
-    }
-
-    const borrowedAt = new Date().toISOString();
-
-    const updatedLocker = {
-      ...target,
-      status: "dipinjam",
-      borrower: borrowerName,
-      userId: borrowerId,
-      borrowerRole,
-      prodi: borrowerProdi,
-      borrowedAt,
-      returnedAt: null,
-    };
-
-    const updated = latest.map((locker) =>
-      locker.number === number
-        ? updatedLocker
-        : locker
-    );
 
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(updated)
-      );
-
-      setLockers(updated);
-
-      window.dispatchEvent(new Event(LOCKER_EVENT));
-
-      const historySaved = saveBorrowHistory(
-        updatedLocker,
-        borrowedAt
-      );
+      const result = await borrowLockerAPI(user.token, number);
 
       setNotice(
-        historySaved
-          ? `Loker ${String(number).padStart(2, "0")} berhasil dipinjam atas nama ${borrowerName}.`
-          : "Loker berhasil dipinjam, tetapi riwayat gagal disimpan."
+        result.message ||
+        `Loker ${String(number).padStart(2, "0")} berhasil dipinjam.`
       );
+
+      const latest = await getLockers(user.token);
+      setLockers(latest);
+
+      window.dispatchEvent(new Event(LOCKER_EVENT));
     } catch (error) {
       console.error("Gagal meminjam loker:", error);
-      setNotice("Peminjaman gagal disimpan.");
+
+      setNotice(
+        error.message || "Peminjaman gagal diproses."
+      );
+
+      // Sinkronkan ulang data jika peminjaman ditolak
+      try {
+        const latest = await getLockers(user.token);
+        setLockers(latest);
+      } catch (refreshError) {
+        console.error("Gagal memperbarui data loker:", refreshError);
+      }
     }
   }
-
   function handleLockerClick(locker) {
     if (locker.status === "tersedia") {
       borrowLocker(locker.number);
@@ -637,3 +491,4 @@ export default function PilihLoker({ user = null }) {
     </div>
   );
 }
+

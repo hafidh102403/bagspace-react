@@ -1,4 +1,4 @@
-
+﻿
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Layers3,
@@ -12,9 +12,8 @@ import {
   X,
 } from "lucide-react";
 import "./MonitoringLoker.css";
+import { getLockers, returnLockerAPI } from "./services/api";
 
-const STORAGE_KEY = "bagspace_locker_demo_v1";
-const HISTORY_KEY = "bagspace_locker_history_v1";
 const LOCKER_EVENT = "bagspace-lockers-updated";
 const TOTAL = 75;
 
@@ -35,43 +34,6 @@ const statusLabels = {
   rusak: "Rusak",
 };
 
-function loadLockers() {
-  const defaults = Array.from({ length: TOTAL }, (_, i) => ({
-    number: i + 1,
-    status: "tersedia",
-    borrower: "",
-  }));
-
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem(STORAGE_KEY) || "null"
-    );
-
-    if (!Array.isArray(saved)) return defaults;
-
-    const byNumber = new Map(
-      saved.map((item) => [Number(item.number), item])
-    );
-
-    return defaults.map((locker) => {
-      const stored = byNumber.get(locker.number);
-
-      if (!stored) return locker;
-
-      return {
-        ...locker,
-        ...stored,
-        number: locker.number,
-        status: statusLabels[stored.status]
-          ? stored.status
-          : "tersedia",
-      };
-    });
-  } catch {
-    return defaults;
-  }
-}
-
 function formatDate(value) {
   if (!value) return "-";
 
@@ -88,53 +50,8 @@ function formatDate(value) {
   });
 }
 
-function saveReturnHistory(locker, returnedAt) {
-  try {
-    const stored = JSON.parse(
-      localStorage.getItem(HISTORY_KEY) || "[]"
-    );
-
-    const history = Array.isArray(stored) ? stored : [];
-
-    const record = {
-      id:
-        globalThis.crypto?.randomUUID?.() ||
-        `${Date.now()}-${locker.number}`,
-      number: locker.number,
-      lockerNumber: locker.number,
-      zone: zoneOf(locker.number)?.name || "",
-      action: "kembali",
-      status: "tersedia",
-      borrower: locker.borrower || "",
-      userId: locker.userId || "",
-      borrowedAt:
-        locker.borrowedAt ||
-        locker.borrowed_at ||
-        locker.startTime ||
-        null,
-      returnedAt,
-      timestamp: returnedAt,
-      createdAt: returnedAt,
-    };
-
-    localStorage.setItem(
-      HISTORY_KEY,
-      JSON.stringify([record, ...history])
-    );
-
-    window.dispatchEvent(
-      new Event("bagspace-locker-history-updated")
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Gagal menyimpan riwayat:", error);
-    return false;
-  }
-}
-
-export default function MonitoringLoker() {
-  const [lockers, setLockers] = useState(loadLockers);
+export default function MonitoringLoker({ user = null }) {
+  const [lockers, setLockers] = useState([]);
   const [search, setSearch] = useState("");
   const [zoneFilter, setZoneFilter] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("Semua");
@@ -145,35 +62,64 @@ export default function MonitoringLoker() {
 
   const pageSize = 10;
 
-  function refresh() {
-    setLockers(loadLockers());
+  async function refresh() {
+    if (!user?.token) {
+      setLockers([]);
+      return;
+    }
+
+    try {
+      const data = await getLockers(user.token);
+      setLockers(data);
+    } catch (error) {
+      console.error("Gagal mengambil data monitoring:", error);
+      setNotice(error.message || "Gagal mengambil data loker.");
+    }
   }
 
   useEffect(() => {
-    const onStorage = (event) => {
-      if (!event.key || event.key === STORAGE_KEY) {
-        refresh();
+    let active = true;
+
+    const load = async () => {
+      if (!user?.token) {
+        if (active) setLockers([]);
+        return;
+      }
+
+      try {
+        const data = await getLockers(user.token);
+
+        if (active) {
+          setLockers(data);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data monitoring:", error);
+
+        if (active) {
+          setNotice(error.message || "Gagal mengambil data loker.");
+        }
       }
     };
 
     const onVisible = () => {
       if (document.visibilityState === "visible") {
-        refresh();
+        load();
       }
     };
 
-    window.addEventListener("storage", onStorage);
-    window.addEventListener(LOCKER_EVENT, refresh);
-    window.addEventListener("focus", refresh);
+    load();
+
+    window.addEventListener(LOCKER_EVENT, load);
+    window.addEventListener("focus", load);
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener(LOCKER_EVENT, refresh);
-      window.removeEventListener("focus", refresh);
+      active = false;
+      window.removeEventListener(LOCKER_EVENT, load);
+      window.removeEventListener("focus", load);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [user?.token]);
 
   const stats = useMemo(
     () => ({
@@ -251,69 +197,43 @@ export default function MonitoringLoker() {
     setConfirmReturn(false);
   }
 
-  function handleReturn() {
+  async function handleReturn() {
     if (!selectedLocker) return;
 
-    const number = selectedLocker.number;
-
-    // Baca ulang agar tidak menimpa perubahan terbaru.
-    const latest = loadLockers();
-    const target = latest.find((l) => l.number === number);
-
-    if (!target || target.status !== "dipinjam") {
-      setNotice(
-        `Loker ${pad(number)} sudah tidak dalam status Dipinjam.`
-      );
-      refresh();
-      closeDetail();
+    if (!user?.token) {
+      setNotice("Sesi login tidak tersedia. Silakan login kembali.");
       return;
     }
 
-    const returnedAt = new Date().toISOString();
-
-    const updated = latest.map((locker) =>
-      locker.number === number
-        ? {
-            ...locker,
-            status: "tersedia",
-            borrower: "",
-            userId: "",
-            borrowedAt: null,
-            borrowed_at: null,
-            startTime: null,
-            returnedAt,
-          }
-        : locker
-    );
+    const number = selectedLocker.number;
 
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(updated)
-      );
+      const result = await returnLockerAPI(user.token, number);
 
-      setLockers(updated);
+      await refresh();
 
       window.dispatchEvent(new Event(LOCKER_EVENT));
 
-      const historySaved = saveReturnHistory(
-        target,
-        returnedAt
-      );
-
       setNotice(
-        historySaved
-          ? `Loker ${pad(number)} berhasil dikembalikan dan sekarang tersedia.`
-          : `Loker ${pad(number)} berhasil dikembalikan, tetapi riwayat gagal disimpan.`
+        result.message ||
+        `Loker ${pad(number)} berhasil dikembalikan dan sekarang tersedia.`
       );
 
       closeDetail();
     } catch (error) {
       console.error("Gagal mengembalikan loker:", error);
-      setNotice("Pengembalian gagal disimpan. Silakan coba lagi.");
+
+      setNotice(
+        error.message || "Pengembalian gagal diproses."
+      );
+
+      try {
+        await refresh();
+      } catch (refreshError) {
+        console.error("Gagal memperbarui data loker:", refreshError);
+      }
     }
   }
-
   return (
     <div className="ml-page">
       <div className="ml-heading">
@@ -548,7 +468,7 @@ export default function MonitoringLoker() {
             {filtered.length
               ? (currentPage - 1) * pageSize + 1
               : 0}
-            –
+            â€“
             {Math.min(
               currentPage * pageSize,
               filtered.length
@@ -718,3 +638,4 @@ export default function MonitoringLoker() {
     </div>
   );
 }
+
