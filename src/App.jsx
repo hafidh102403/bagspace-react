@@ -1666,33 +1666,12 @@ export default function App() {
       SESSION_KEY,
       sessionData
     );
-
-    // Admin tidak dihitung sebagai pengunjung.
-    if (!isAdminRole) {
-      try {
-        const visitorResult = await recordVisitor({
-          nim_nip: apiUser.nim_nip,
-          email: apiUser.email || "",
-        });
-
-        if (!visitorResult || visitorResult.success === false) {
-          throw new Error(
-            visitorResult?.message || "Pencatatan kunjungan gagal."
-          );
-        }
-
-        window.dispatchEvent(
-          new Event("bagspace-visitors-updated")
-        );
-      } catch (error) {
-        console.error(
-          "Gagal mencatat kunjungan:",
-          error.message
-        );
-      }
-    }
-
-    return true;
+    // Login berhasil dicatat oleh login.php.
+    // Beri tahu dashboard untuk mengambil statistik terbaru.
+    window.dispatchEvent(
+      new Event("bagspace-visitors-updated")
+    );
+return true;
   }
 
   // Simpan perubahan profil melalui database BagSpace.
@@ -1778,5 +1757,6 @@ export default function App() {
     <LoginPage onLogin={handleLogin} />
   );
 }
+
 
 
