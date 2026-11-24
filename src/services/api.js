@@ -136,3 +136,20 @@ export async function returnLockerAPI(token, number) {
     body: JSON.stringify({ number }),
   });
 }
+
+// =====================================================
+// LOCKER HISTORY API
+// =====================================================
+
+export async function getLockerHistory(token) {
+  if (!token) throw new Error("Token login tidak tersedia.");
+
+  const result = await requestAPI("/locker_history.php", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return result.data || [];
+}
